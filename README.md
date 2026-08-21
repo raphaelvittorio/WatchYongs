@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WatchYoung — Sistem Reparasi Jam Tangan
 
-## Getting Started
+Dashboard internal untuk mengelola alur reparasi jam: Intake → Assessment → On Process → Completed → Picked Up.
 
-First, run the development server:
+## Tech Stack
+
+- **Next.js 16** (App Router, TypeScript) — dashboard + API dalam satu codebase
+- **Prisma ORM + SQLite** — database lokal (`prisma/dev.db`), gampang pindah ke PostgreSQL nanti tinggal ganti provider + `DATABASE_URL`
+- **Tailwind CSS + shadcn/ui** (Base UI primitives)
+- **bcryptjs + jose** — auth staff (session cookie JWT, tanpa provider pihak ketiga)
+- **react-hook-form + zod** — validasi form
+
+## Setup Awal
 
 ```bash
+npm install
+npx prisma migrate dev
+npm run db:seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Buka [http://localhost:3000](http://localhost:3000). Login dengan akun seed:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Email: `admin@watchyoung.local`
+- Password: `watchyoung123`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`npm run db:seed` bisa dijalankan ulang kapan saja untuk reset ke data contoh (idempotent — akan menghapus data lama dulu).
 
-## Learn More
+## Struktur Utama
 
-To learn more about Next.js, take a look at the following resources:
+- `prisma/schema.prisma` — data model (Customer, RepairOrder, Photo, StatusHistory, Assessment, Counter, User)
+- `lib/status.ts` — label status, aturan transisi status, helper tanggal
+- `lib/auth.ts` / `proxy.ts` — session login & proteksi route
+- `lib/photo-upload.ts` — validasi & penyimpanan foto (`public/uploads/{orderId}/...`)
+- `app/(dashboard)/` — halaman dashboard, order, customer (perlu login)
+- `app/api/` — route handler untuk order, status, assessment, foto, customer
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Fitur yang Sudah Ada
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Login staff
+- Dashboard: ringkasan jumlah order per status + alert otomatis (On Process > 14 hari, Completed belum diambil > 7 hari)
+- Intake baru: pilih/buat customer, data jam, foto kondisi awal, auto nomor order (`WY-000x`)
+- Detail order: timeline status, update status, assessment (estimasi harga + Setuju/Tolak)
+- Data customer & riwayat order-nya
 
-## Deploy on Vercel
+## Belum Dikerjakan (Roadmap)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Notifikasi WhatsApp (intake masuk, quote assessment, reminder pickup)
+- Generate invoice PDF + arsip otomatis ke Google Drive
+- Reminder otomatis terjadwal (cron/N8N) — data pendukungnya (`statusChangedAt`, `StatusHistory`) sudah ada di schema
+- Migrasi SQLite → PostgreSQL untuk production

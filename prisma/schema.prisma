@@ -1,0 +1,102 @@
+// Prisma schema — WatchYoung repair order system
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Counter {
+  id    String @id
+  value Int    @default(0)
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Customer {
+  id        String        @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  createdAt DateTime      @default(now())
+  orders    RepairOrder[]
+}
+
+enum OrderStatus {
+  INTAKE
+  ASSESSMENT
+  ONPROCESS
+  COMPLETED
+  PICKED
+  REJECTED
+}
+
+model RepairOrder {
+  id              String          @id @default(cuid())
+  orderNumber     String          @unique
+  customerId      String
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  watchBrand      String
+  watchModel      String?
+  watchInfo       String?
+  status          OrderStatus     @default(INTAKE)
+  notes           String?
+  statusChangedAt DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  photos          Photo[]
+  statusHistory   StatusHistory[]
+  assessment      Assessment?
+}
+
+enum PhotoStage {
+  INTAKE
+  ASSESSMENT
+  COMPLETION
+}
+
+model Photo {
+  id            String      @id @default(cuid())
+  repairOrderId String
+  repairOrder   RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  stage         PhotoStage
+  path          String
+  uploadedAt    DateTime    @default(now())
+}
+
+model StatusHistory {
+  id            String       @id @default(cuid())
+  repairOrderId String
+  repairOrder   RepairOrder  @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  fromStatus    OrderStatus?
+  toStatus      OrderStatus
+  note          String?
+  changedAt     DateTime     @default(now())
+}
+
+enum AssessmentDecision {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Assessment {
+  id             String             @id @default(cuid())
+  repairOrderId  String             @unique
+  repairOrder    RepairOrder        @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  estimatedPrice Int
+  diagnosis      String?
+  decision       AssessmentDecision @default(PENDING)
+  decidedAt      DateTime?
+  createdAt      DateTime           @default(now())
+}
