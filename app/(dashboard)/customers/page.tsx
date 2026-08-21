@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -18,11 +19,16 @@ export default async function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Customer</h1>
-        <p className="text-sm text-muted-foreground">
-          {customers.length} customer terdaftar
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Customer</h1>
+          <p className="text-sm text-muted-foreground">
+            {customers.length} customer terdaftar
+          </p>
+        </div>
+        <Button render={<Link href="/customers/new" />} nativeButton={false}>
+          + Customer Baru
+        </Button>
       </div>
       <Card>
         <CardContent className="pt-6">

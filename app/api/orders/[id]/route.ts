@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 
 export async function GET(
@@ -13,6 +14,7 @@ export async function GET(
       photos: { orderBy: { uploadedAt: "asc" } },
       statusHistory: { orderBy: { changedAt: "asc" } },
       assessment: true,
+      invoice: true,
     },
   });
 
@@ -21,4 +23,41 @@ export async function GET(
   }
 
   return NextResponse.json(order);
+}
+
+const patchSchema = z.object({
+  watchBrand: z.string().min(1, "Merk jam wajib diisi.").optional(),
+  watchModel: z.string().optional(),
+  watchInfo: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const json = await request.json().catch(() => null);
+  const parsed = patchSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Data order tidak valid." }, { status: 400 });
+  }
+
+  const existing = await prisma.repairOrder.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
+  }
+
+  const { watchBrand, watchModel, watchInfo, notes } = parsed.data;
+  const updated = await prisma.repairOrder.update({
+    where: { id },
+    data: {
+      watchBrand,
+      watchModel: watchModel || null,
+      watchInfo: watchInfo || null,
+      notes: notes || null,
+    },
+  });
+
+  return NextResponse.json(updated);
 }

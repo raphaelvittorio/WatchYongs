@@ -30,6 +30,7 @@ import { daysAgo, daysSince, type OrderStatus } from "@/lib/status";
 
 const ONPROCESS_ALERT_DAYS = 14;
 const COMPLETED_ALERT_DAYS = 7;
+const STORAGE_FEE_DAYS = 21; // diagram's "Weekly Reminder Max 3 Week" rule
 
 export default async function DashboardPage() {
   const onProcessThreshold = daysAgo(ONPROCESS_ALERT_DAYS);
@@ -65,12 +66,19 @@ export default async function DashboardPage() {
       title: `${order.orderNumber} · ${order.watchBrand} (${order.customer.name})`,
       description: `Sudah ${daysSince(order.statusChangedAt)} hari di On Process. Perlu action?`,
     })),
-    ...completedOverdue.map((order) => ({
-      id: order.id,
-      href: `/orders/${order.id}`,
-      title: `${order.orderNumber} · ${order.watchBrand} (${order.customer.name})`,
-      description: `Sudah selesai ${daysSince(order.statusChangedAt)} hari, belum diambil.`,
-    })),
+    ...completedOverdue.map((order) => {
+      const overdueDays = daysSince(order.statusChangedAt);
+      const description =
+        overdueDays >= STORAGE_FEE_DAYS
+          ? `Sudah selesai ${overdueDays} hari (>3 minggu) — kena biaya penyimpanan.`
+          : `Sudah selesai ${overdueDays} hari, belum diambil.`;
+      return {
+        id: order.id,
+        href: `/orders/${order.id}`,
+        title: `${order.orderNumber} · ${order.watchBrand} (${order.customer.name})`,
+        description,
+      };
+    }),
   ];
 
   return (

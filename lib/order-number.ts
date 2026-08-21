@@ -2,14 +2,21 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 
-const ORDER_NUMBER_COUNTER_ID = "order_number";
-const ORDER_NUMBER_PREFIX = "WY-";
-
-export async function generateOrderNumber(): Promise<string> {
+async function nextSequence(counterId: string): Promise<number> {
   const counter = await prisma.counter.upsert({
-    where: { id: ORDER_NUMBER_COUNTER_ID },
-    create: { id: ORDER_NUMBER_COUNTER_ID, value: 1 },
+    where: { id: counterId },
+    create: { id: counterId, value: 1 },
     update: { value: { increment: 1 } },
   });
-  return `${ORDER_NUMBER_PREFIX}${String(counter.value).padStart(4, "0")}`;
+  return counter.value;
+}
+
+export async function generateOrderNumber(): Promise<string> {
+  const value = await nextSequence("order_number");
+  return `WY-${String(value).padStart(4, "0")}`;
+}
+
+export async function generateInvoiceNumber(): Promise<string> {
+  const value = await nextSequence("invoice_number");
+  return `INV-${String(value).padStart(4, "0")}`;
 }

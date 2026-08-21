@@ -2,7 +2,10 @@
 // imported from both server and client components without pulling in the
 // Node-only Prisma client runtime.
 export { OrderStatus, PhotoStage, AssessmentDecision } from "@/app/generated/prisma/browser";
-import type { OrderStatus as OrderStatusType } from "@/app/generated/prisma/browser";
+import type {
+  OrderStatus as OrderStatusType,
+  PhotoStage as PhotoStageType,
+} from "@/app/generated/prisma/browser";
 
 export const STATUS_LABELS: Record<OrderStatusType, string> = {
   INTAKE: "Intake",
@@ -45,4 +48,23 @@ export function daysSince(date: Date): number {
 
 export function daysAgo(days: number): Date {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+export const PHOTO_STAGE_LABELS: Record<PhotoStageType, string> = {
+  INTAKE: "Foto Intake",
+  ASSESSMENT: "Foto Assessment",
+  COMPLETION: "Foto Completion",
+};
+
+// Sensible default stage to pre-select when staff adds a photo, based on
+// where the order currently sits in the workflow.
+export function defaultPhotoStageFor(status: OrderStatusType): PhotoStageType {
+  switch (status) {
+    case "INTAKE":
+      return "INTAKE";
+    case "ASSESSMENT":
+      return "ASSESSMENT";
+    default:
+      return "COMPLETION";
+  }
 }

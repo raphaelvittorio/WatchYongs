@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { StatusBadge } from "@/components/orders/StatusBadge";
+import { EditCustomerDialog } from "@/components/customers/EditCustomerDialog";
 import {
   Card,
   CardContent,
@@ -34,15 +35,18 @@ export default async function CustomerDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{customer.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          {customer.phone}
-          {customer.email ? ` · ${customer.email}` : ""}
-        </p>
-        {customer.address && (
-          <p className="text-sm text-muted-foreground">{customer.address}</p>
-        )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{customer.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            {customer.phone}
+            {customer.email ? ` · ${customer.email}` : ""}
+          </p>
+          {customer.address && (
+            <p className="text-sm text-muted-foreground">{customer.address}</p>
+          )}
+        </div>
+        <EditCustomerDialog customer={customer} />
       </div>
 
       <Card>

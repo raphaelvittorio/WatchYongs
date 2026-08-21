@@ -57,6 +57,7 @@ model RepairOrder {
   photos          Photo[]
   statusHistory   StatusHistory[]
   assessment      Assessment?
+  invoice         Invoice?
 }
 
 enum PhotoStage {
@@ -99,4 +100,14 @@ model Assessment {
   decision       AssessmentDecision @default(PENDING)
   decidedAt      DateTime?
   createdAt      DateTime           @default(now())
+}
+
+model Invoice {
+  id            String      @id @default(cuid())
+  repairOrderId String      @unique
+  repairOrder   RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
+  invoiceNumber String      @unique
+  amount        Int
+  pdfPath       String
+  createdAt     DateTime    @default(now())
 }
