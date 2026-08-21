@@ -72,3 +72,9 @@ export function normalizePhoneForWhatsapp(phone: string): string {
 export function buildWhatsappLink(phone: string, message: string): string {
   return `https://wa.me/${normalizePhoneForWhatsapp(phone)}?text=${encodeURIComponent(message)}`;
 }
+
+export const WHATSAPP_TEMPLATE_LABELS: Record<string, string> = {
+  assessment: "Estimasi Biaya",
+  completed: "Notifikasi Selesai",
+  overdue: "Reminder Pengambilan",
+};

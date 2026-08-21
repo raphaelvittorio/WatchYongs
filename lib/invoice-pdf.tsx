@@ -48,6 +48,7 @@ export type InvoicePdfData = {
     address: string | null;
   };
   diagnosis: string | null;
+  note: string | null;
 };
 
 function InvoiceDocument({ data }: { data: InvoicePdfData }) {
@@ -87,6 +88,7 @@ function InvoiceDocument({ data }: { data: InvoicePdfData }) {
               <Text>{watchLabel}</Text>
               {data.order.watchInfo && <Text style={styles.muted}>{data.order.watchInfo}</Text>}
               {data.diagnosis && <Text style={styles.muted}>{data.diagnosis}</Text>}
+              {data.note && <Text style={styles.muted}>Catatan: {data.note}</Text>}
             </View>
             <Text>{formatRupiah(data.amount)}</Text>
           </View>

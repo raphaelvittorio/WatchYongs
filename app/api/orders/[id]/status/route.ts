@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { isValidTransition, OrderStatus } from "@/lib/status";
-import { ensureInvoice } from "@/lib/invoice";
-
-export const runtime = "nodejs";
 
 const bodySchema = z.object({
   toStatus: z.enum([
@@ -53,11 +50,6 @@ export async function POST(
       },
     },
   });
-
-  // Matches the diagram's "Staff Click Complete -> Generate invoice PDF" trigger.
-  if (toStatus === OrderStatus.COMPLETED) {
-    await ensureInvoice(id);
-  }
 
   return NextResponse.json(updated);
 }

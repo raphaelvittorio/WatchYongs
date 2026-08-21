@@ -9,6 +9,8 @@ import { StatusActions } from "@/components/orders/StatusActions";
 import { AssessmentCard } from "@/components/orders/AssessmentCard";
 import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { WhatsappActions } from "@/components/orders/WhatsappActions";
+import { WhatsappHistoryCard } from "@/components/orders/WhatsappHistoryCard";
+import { CompleteOrderDialog } from "@/components/orders/CompleteOrderDialog";
 import {
   Card,
   CardContent,
@@ -32,6 +34,7 @@ export default async function OrderDetailPage({
       statusHistory: { orderBy: { changedAt: "asc" } },
       assessment: true,
       invoice: true,
+      whatsappLogs: { orderBy: { sentAt: "desc" } },
     },
   });
 
@@ -59,10 +62,17 @@ export default async function OrderDetailPage({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <WhatsappActions
+            orderId={order.id}
             order={order}
             customer={order.customer}
             assessment={order.assessment}
           />
+          {order.status === "ONPROCESS" && (
+            <CompleteOrderDialog
+              orderId={order.id}
+              estimatedPrice={order.assessment?.estimatedPrice ?? 0}
+            />
+          )}
           <StatusActions orderId={order.id} status={order.status} />
         </div>
       </div>
@@ -127,6 +137,8 @@ export default async function OrderDetailPage({
               </CardContent>
             </Card>
           )}
+
+          <WhatsappHistoryCard logs={order.whatsappLogs} />
         </div>
 
         <div>

@@ -32,10 +32,12 @@ type OrderInfo = {
 type CustomerInfo = { name: string; phone: string };
 
 export function WhatsappActions({
+  orderId,
   order,
   customer,
   assessment,
 }: {
+  orderId: string;
   order: OrderInfo;
   customer: CustomerInfo;
   assessment: { estimatedPrice: number; diagnosis: string | null } | null;
@@ -77,23 +79,42 @@ export function WhatsappActions({
   return (
     <div className="flex flex-wrap gap-2">
       {templates.map((t) => (
-        <TemplateDialogButton key={t.key} label={t.label} message={t.message} phone={customer.phone} />
+        <TemplateDialogButton
+          key={t.key}
+          orderId={orderId}
+          templateType={t.key}
+          label={t.label}
+          message={t.message}
+          phone={customer.phone}
+        />
       ))}
     </div>
   );
 }
 
 function TemplateDialogButton({
+  orderId,
+  templateType,
   label,
   message,
   phone,
 }: {
+  orderId: string;
+  templateType: string;
   label: string;
   message: string;
   phone: string;
 }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(message);
+
+  function logSend() {
+    fetch(`/api/orders/${orderId}/whatsapp-log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ templateType, message: text }),
+    }).catch(() => {});
+  }
 
   return (
     <Dialog
@@ -137,7 +158,14 @@ function TemplateDialogButton({
             Salin Teks
           </Button>
           <Button
-            render={<a href={buildWhatsappLink(phone, text)} target="_blank" rel="noreferrer" />}
+            render={
+              <a
+                href={buildWhatsappLink(phone, text)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={logSend}
+              />
+            }
             nativeButton={false}
           >
             Buka WhatsApp

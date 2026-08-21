@@ -26,13 +26,14 @@ export const STATUS_BADGE_CLASS: Record<OrderStatusType, string> = {
 };
 
 // Manual forward transitions available as generic buttons on the order
-// detail page. ASSESSMENT -> ONPROCESS/REJECTED is intentionally excluded
-// here: that move only happens through the assessment decision (Setuju/
-// Tolak), which carries the estimated price/diagnosis context with it.
+// detail page. ASSESSMENT -> ONPROCESS/REJECTED and ONPROCESS -> COMPLETED
+// are intentionally excluded here: those moves happen through dedicated
+// flows instead (assessment decision, and the completion dialog which
+// captures the final invoice amount) rather than a bare status flip.
 export const ALLOWED_TRANSITIONS: Record<OrderStatusType, OrderStatusType[]> = {
   INTAKE: ["ASSESSMENT", "REJECTED"],
   ASSESSMENT: [],
-  ONPROCESS: ["COMPLETED"],
+  ONPROCESS: [],
   COMPLETED: ["PICKED"],
   PICKED: [],
   REJECTED: [],

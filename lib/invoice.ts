@@ -6,7 +6,10 @@ import { prisma } from "@/lib/db";
 import { generateInvoiceNumber } from "@/lib/order-number";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 
-export async function ensureInvoice(orderId: string) {
+export async function ensureInvoice(
+  orderId: string,
+  opts?: { finalAmount?: number; note?: string },
+) {
   const existing = await prisma.invoice.findUnique({ where: { repairOrderId: orderId } });
   if (existing) return existing;
 
@@ -15,7 +18,8 @@ export async function ensureInvoice(orderId: string) {
     include: { customer: true, assessment: true },
   });
 
-  const amount = order.assessment?.estimatedPrice ?? 0;
+  const amount = opts?.finalAmount ?? order.assessment?.estimatedPrice ?? 0;
+  const note = opts?.note?.trim() || null;
   const invoiceNumber = await generateInvoiceNumber();
   const createdAt = new Date();
 
@@ -23,6 +27,7 @@ export async function ensureInvoice(orderId: string) {
     invoiceNumber,
     createdAt,
     amount,
+    note,
     order: {
       orderNumber: order.orderNumber,
       watchBrand: order.watchBrand,
@@ -47,6 +52,7 @@ export async function ensureInvoice(orderId: string) {
       repairOrderId: orderId,
       invoiceNumber,
       amount,
+      note,
       createdAt,
       pdfPath: `/uploads/${orderId}/${filename}`,
     },
