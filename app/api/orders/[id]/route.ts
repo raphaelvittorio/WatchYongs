@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { prisma } from "@/lib/db";
 import { ServiceType } from "@/lib/status";
+
+export const runtime = "nodejs";
 
 export async function GET(
   _request: Request,
@@ -63,4 +67,33 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const order = await prisma.repairOrder.findUnique({
+    where: { id },
+    include: { invoice: true },
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
+  }
+  if (order.invoice) {
+    return NextResponse.json(
+      { error: "Order dengan invoice tidak bisa dihapus." },
+      { status: 400 },
+    );
+  }
+
+  await prisma.repairOrder.delete({ where: { id } });
+  await rm(path.join(process.cwd(), "public", "uploads", id), {
+    recursive: true,
+    force: true,
+  });
+
+  return NextResponse.json({ ok: true });
 }

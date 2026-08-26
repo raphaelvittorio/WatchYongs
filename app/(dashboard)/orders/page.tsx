@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { STATUS_LABELS, OrderStatus, type OrderStatus as OrderStatusType } from "@/lib/status";
@@ -19,40 +20,61 @@ const STATUS_FILTERS = [
   ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
+const PAGE_SIZE = 20;
+
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
-  const { status, q } = await searchParams;
+  const { status, q, page: pageParam } = await searchParams;
   const validStatus =
     status && Object.values(OrderStatus).includes(status as OrderStatusType)
       ? (status as OrderStatusType)
       : undefined;
+  const page = Math.max(1, Number(pageParam) || 1);
 
-  const orders = await prisma.repairOrder.findMany({
-    where: {
-      status: validStatus,
-      ...(q
-        ? {
-            OR: [
-              { orderNumber: { contains: q } },
-              { watchBrand: { contains: q } },
-              { customer: { name: { contains: q } } },
-            ],
-          }
-        : {}),
-    },
-    include: { customer: true },
-    orderBy: { createdAt: "desc" },
-  });
+  const where = {
+    status: validStatus,
+    ...(q
+      ? {
+          OR: [
+            { orderNumber: { contains: q } },
+            { watchBrand: { contains: q } },
+            { customer: { name: { contains: q } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [orders, total] = await Promise.all([
+    prisma.repairOrder.findMany({
+      where,
+      include: { customer: true },
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.repairOrder.count({ where }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  function pageHref(targetPage: number) {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (validStatus) params.set("status", validStatus);
+    if (targetPage > 1) params.set("page", String(targetPage));
+    const qs = params.toString();
+    return qs ? `/orders?${qs}` : "/orders";
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Order Reparasi</h1>
-          <p className="text-sm text-muted-foreground">{orders.length} order</p>
+          <p className="text-sm text-muted-foreground">{total} order</p>
         </div>
         <Button render={<Link href="/orders/new" />} nativeButton={false}>
           + Intake Baru
@@ -127,6 +149,48 @@ export default async function OrdersPage({
               ))}
             </TableBody>
           </Table>
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+              <span>
+                Halaman {page} dari {totalPages}
+              </span>
+              <div className="flex gap-2">
+                {page > 1 ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={<Link href={pageHref(page - 1)} />}
+                    nativeButton={false}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Sebelumnya
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" disabled>
+                    <ChevronLeft className="h-4 w-4" />
+                    Sebelumnya
+                  </Button>
+                )}
+                {page < totalPages ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={<Link href={pageHref(page + 1)} />}
+                    nativeButton={false}
+                  >
+                    Selanjutnya
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" disabled>
+                    Selanjutnya
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

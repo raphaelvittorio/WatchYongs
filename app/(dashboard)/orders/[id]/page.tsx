@@ -13,6 +13,7 @@ import { WhatsappActions } from "@/components/orders/WhatsappActions";
 import { WhatsappHistoryCard } from "@/components/orders/WhatsappHistoryCard";
 import { CompleteOrderDialog } from "@/components/orders/CompleteOrderDialog";
 import { WorkChecklist } from "@/components/orders/WorkChecklist";
+import { DeleteOrderButton } from "@/components/orders/DeleteOrderButton";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -88,6 +89,9 @@ export default async function OrderDetailPage({
             />
           )}
           <StatusActions orderId={order.id} status={order.status} />
+          {!order.invoice && (
+            <DeleteOrderButton orderId={order.id} orderNumber={order.orderNumber} />
+          )}
         </div>
       </div>
 

@@ -54,3 +54,27 @@ export async function PATCH(
 
   return NextResponse.json(updated);
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const customer = await prisma.customer.findUnique({
+    where: { id },
+    include: { _count: { select: { orders: true } } },
+  });
+
+  if (!customer) {
+    return NextResponse.json({ error: "Customer tidak ditemukan." }, { status: 404 });
+  }
+  if (customer._count.orders > 0) {
+    return NextResponse.json(
+      { error: "Customer dengan order tidak bisa dihapus." },
+      { status: 400 },
+    );
+  }
+
+  await prisma.customer.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { EditCustomerDialog } from "@/components/customers/EditCustomerDialog";
+import { DeleteCustomerButton } from "@/components/customers/DeleteCustomerButton";
 import {
   Card,
   CardContent,
@@ -53,7 +54,12 @@ export default async function CustomerDetailPage({
             </p>
           )}
         </div>
-        <EditCustomerDialog customer={customer} />
+        <div className="flex items-center gap-2">
+          <EditCustomerDialog customer={customer} />
+          {customer.orders.length === 0 && (
+            <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
+          )}
+        </div>
       </div>
 
       <Card>

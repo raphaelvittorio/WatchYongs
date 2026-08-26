@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, ClipboardList, Users, LogOut, Watch } from "lucide-react";
+import { LayoutDashboard, ClipboardList, Users, UserCog, LogOut, Watch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Order Reparasi", icon: ClipboardList },
   { href: "/customers", label: "Customer", icon: Users },
+  { href: "/users", label: "Staff", icon: UserCog },
 ];
 
 export function Sidebar({ user }: { user: { name: string; email: string } }) {
