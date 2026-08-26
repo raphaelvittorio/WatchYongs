@@ -69,6 +69,14 @@ export default async function OrdersPage({
     return qs ? `/orders?${qs}` : "/orders";
   }
 
+  const exportHref = (() => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (validStatus) params.set("status", validStatus);
+    const qs = params.toString();
+    return qs ? `/api/orders/export?${qs}` : "/api/orders/export";
+  })();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -76,9 +84,14 @@ export default async function OrdersPage({
           <h1 className="text-2xl font-semibold">Order Reparasi</h1>
           <p className="text-sm text-muted-foreground">{total} order</p>
         </div>
-        <Button render={<Link href="/orders/new" />} nativeButton={false}>
-          + Intake Baru
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" render={<a href={exportHref} />} nativeButton={false}>
+            Export CSV
+          </Button>
+          <Button render={<Link href="/orders/new" />} nativeButton={false}>
+            + Intake Baru
+          </Button>
+        </div>
       </div>
 
       <Card>

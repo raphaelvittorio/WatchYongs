@@ -43,6 +43,16 @@ Buka [http://localhost:3000](http://localhost:3000). Login dengan akun seed:
 - Detail order: timeline status, update status, assessment (estimasi harga + Setuju/Tolak)
 - Data customer & riwayat order-nya
 
+## Backup & Restore Database
+
+Tombol **"Backup Database"** di halaman `/users` men-download dump `.sql` lengkap (via `mysqldump`) dari database MySQL/MariaDB yang sedang dipakai.
+
+Restore dari file backup:
+
+```bash
+mysql -u root watchyoung < watchyoung-backup-xxxxx.sql
+```
+
 ## Belum Dikerjakan (Roadmap)
 
 - Notifikasi WhatsApp (intake masuk, quote assessment, reminder pickup)

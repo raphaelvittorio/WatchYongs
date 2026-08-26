@@ -10,6 +10,7 @@ import {
 import { prisma } from "@/lib/db";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AlertList, type AlertItem } from "@/components/dashboard/AlertList";
+import { PickupReminders } from "@/components/dashboard/PickupReminders";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -105,6 +106,8 @@ export default async function DashboardPage() {
       </div>
 
       <AlertList items={alerts} />
+
+      <PickupReminders orders={completedOverdue} />
 
       <Card>
         <CardHeader>

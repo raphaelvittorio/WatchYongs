@@ -31,9 +31,18 @@ export default async function UsersPage() {
           <h1 className="text-2xl font-semibold">Staff</h1>
           <p className="text-sm text-muted-foreground">{users.length} akun staff</p>
         </div>
-        <Button render={<Link href="/users/new" />} nativeButton={false}>
-          + Staff Baru
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            render={<a href="/api/backup" />}
+            nativeButton={false}
+          >
+            Backup Database
+          </Button>
+          <Button render={<Link href="/users/new" />} nativeButton={false}>
+            + Staff Baru
+          </Button>
+        </div>
       </div>
       <Card>
         <CardContent className="pt-6">
