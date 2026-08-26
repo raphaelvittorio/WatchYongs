@@ -1,10 +1,11 @@
 // Re-exported from the browser-safe Prisma entry point so this file can be
 // imported from both server and client components without pulling in the
 // Node-only Prisma client runtime.
-export { OrderStatus, PhotoStage, AssessmentDecision } from "@/app/generated/prisma/browser";
+export { OrderStatus, PhotoStage, AssessmentDecision, ServiceType } from "@/app/generated/prisma/browser";
 import type {
   OrderStatus as OrderStatusType,
   PhotoStage as PhotoStageType,
+  ServiceType as ServiceTypeType,
 } from "@/app/generated/prisma/browser";
 
 export const STATUS_LABELS: Record<OrderStatusType, string> = {
@@ -68,4 +69,31 @@ export function defaultPhotoStageFor(status: OrderStatusType): PhotoStageType {
     default:
       return "COMPLETION";
   }
+}
+
+export const SERVICE_TYPE_LABELS: Record<ServiceTypeType, string> = {
+  BESAR: "Service Besar",
+  KECIL: "Service Kecil",
+};
+
+export type WorkChecklistState = {
+  dropJam: boolean;
+  onProses: boolean;
+  selesai: boolean;
+  ambilJam: boolean;
+};
+
+// Visual restatement of the existing status progression as the 4-step
+// checklist from the physical work-order card (Drop Jam / Onproses /
+// Selesai / Ambil Jam). This does not add new states — ASSESSMENT and
+// REJECTED still exist and still drive the real workflow (assessment,
+// invoice, WhatsApp); they just don't map to a distinct checklist row,
+// matching what the physical card actually lists.
+export function getWorkChecklist(status: OrderStatusType): WorkChecklistState {
+  return {
+    dropJam: true,
+    onProses: status === "ONPROCESS" || status === "COMPLETED" || status === "PICKED",
+    selesai: status === "COMPLETED" || status === "PICKED",
+    ambilJam: status === "PICKED",
+  };
 }

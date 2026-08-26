@@ -62,7 +62,7 @@ export function AddPhotoForm({
       <div className="space-y-1">
         <Select value={stage} onValueChange={(v) => setStage(v as PhotoStage)}>
           <SelectTrigger size="sm" className="w-40">
-            <SelectValue />
+            <SelectValue>{(value: PhotoStage) => PHOTO_STAGE_LABELS[value]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {STAGES.map((s) => (

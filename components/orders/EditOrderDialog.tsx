@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -19,11 +19,22 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SERVICE_TYPE_LABELS, ServiceType, type ServiceType as ServiceTypeValue } from "@/lib/status";
+
+const SERVICE_TYPES = Object.values(ServiceType);
 
 const schema = z.object({
   watchBrand: z.string().min(1, "Merk jam wajib diisi."),
   watchModel: z.string().optional(),
   watchInfo: z.string().optional(),
+  serviceType: z.enum([ServiceType.BESAR, ServiceType.KECIL]).optional(),
   notes: z.string().optional(),
 });
 
@@ -38,6 +49,7 @@ export function EditOrderDialog({
     watchBrand: string;
     watchModel: string | null;
     watchInfo: string | null;
+    serviceType: ServiceTypeValue | null;
     notes: string | null;
   };
 }) {
@@ -46,6 +58,7 @@ export function EditOrderDialog({
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -55,6 +68,7 @@ export function EditOrderDialog({
       watchBrand: order.watchBrand,
       watchModel: order.watchModel ?? "",
       watchInfo: order.watchInfo ?? "",
+      serviceType: order.serviceType ?? undefined,
       notes: order.notes ?? "",
     },
   });
@@ -110,7 +124,30 @@ export function EditOrderDialog({
             <Textarea id="edit-watchInfo" rows={2} {...register("watchInfo")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-notes">Catatan</Label>
+            <Label>Jenis Service</Label>
+            <Controller
+              control={control}
+              name="serviceType"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih jenis service...">
+                      {(value: ServiceTypeValue) => SERVICE_TYPE_LABELS[value]}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {SERVICE_TYPE_LABELS[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-notes">Keterangan Masalah</Label>
             <Textarea id="edit-notes" rows={3} {...register("notes")} />
           </div>
           <DialogFooter>

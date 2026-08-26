@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
 }
 
 model Counter {
@@ -23,13 +23,15 @@ model User {
 }
 
 model Customer {
-  id        String        @id @default(cuid())
-  name      String
-  phone     String
-  email     String?
-  address   String?
-  createdAt DateTime      @default(now())
-  orders    RepairOrder[]
+  id             String        @id @default(cuid())
+  name           String
+  phone          String
+  email          String?
+  address        String?
+  ownerAge       Int?
+  ownerCharacter String?
+  createdAt      DateTime      @default(now())
+  orders         RepairOrder[]
 }
 
 enum OrderStatus {
@@ -41,6 +43,11 @@ enum OrderStatus {
   REJECTED
 }
 
+enum ServiceType {
+  BESAR
+  KECIL
+}
+
 model RepairOrder {
   id              String          @id @default(cuid())
   orderNumber     String          @unique
@@ -49,6 +56,7 @@ model RepairOrder {
   watchBrand      String
   watchModel      String?
   watchInfo       String?
+  serviceType     ServiceType?
   status          OrderStatus     @default(INTAKE)
   notes           String?
   statusChangedAt DateTime        @default(now())

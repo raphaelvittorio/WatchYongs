@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/order-number";
-import { OrderStatus } from "@/lib/status";
+import { OrderStatus, ServiceType } from "@/lib/status";
 import {
   extractPhotoFiles,
   saveUploadedPhotos,
@@ -12,6 +12,7 @@ import {
 export const runtime = "nodejs";
 
 const VALID_STATUSES = new Set(Object.values(OrderStatus));
+const VALID_SERVICE_TYPES = new Set(Object.values(ServiceType));
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -49,10 +50,13 @@ export async function POST(request: NextRequest) {
   const watchModel = formData.get("watchModel")?.toString().trim() || null;
   const watchInfo = formData.get("watchInfo")?.toString().trim() || null;
   const notes = formData.get("notes")?.toString().trim() || null;
+  const serviceTypeRaw = formData.get("serviceType")?.toString();
 
   const customerId = formData.get("customerId")?.toString() || null;
   const customerName = formData.get("customerName")?.toString().trim();
   const customerPhone = formData.get("customerPhone")?.toString().trim();
+  const ownerAgeRaw = formData.get("ownerAge")?.toString().trim();
+  const ownerCharacter = formData.get("ownerCharacter")?.toString().trim() || null;
 
   if (!watchBrand) {
     return NextResponse.json({ error: "Merk jam wajib diisi." }, { status: 400 });
@@ -62,6 +66,19 @@ export async function POST(request: NextRequest) {
       { error: "Pilih customer atau isi nama & no. HP customer baru." },
       { status: 400 },
     );
+  }
+  if (!serviceTypeRaw || !VALID_SERVICE_TYPES.has(serviceTypeRaw as ServiceType)) {
+    return NextResponse.json({ error: "Jenis service wajib dipilih." }, { status: 400 });
+  }
+  const serviceType = serviceTypeRaw as ServiceType;
+
+  let ownerAge: number | null = null;
+  if (ownerAgeRaw) {
+    const parsedAge = Number(ownerAgeRaw);
+    if (!Number.isInteger(parsedAge) || parsedAge <= 0) {
+      return NextResponse.json({ error: "Usia owner tidak valid." }, { status: 400 });
+    }
+    ownerAge = parsedAge;
   }
 
   const photos = extractPhotoFiles(formData);
@@ -77,7 +94,12 @@ export async function POST(request: NextRequest) {
   const customer = customerId
     ? await prisma.customer.findUnique({ where: { id: customerId } })
     : await prisma.customer.create({
-        data: { name: customerName!, phone: customerPhone! },
+        data: {
+          name: customerName!,
+          phone: customerPhone!,
+          ownerAge,
+          ownerCharacter,
+        },
       });
 
   if (!customer) {
@@ -92,6 +114,7 @@ export async function POST(request: NextRequest) {
       watchBrand,
       watchModel,
       watchInfo,
+      serviceType,
       notes,
       status: OrderStatus.INTAKE,
       statusHistory: {

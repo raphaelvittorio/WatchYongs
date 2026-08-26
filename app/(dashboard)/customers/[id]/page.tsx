@@ -45,6 +45,13 @@ export default async function CustomerDetailPage({
           {customer.address && (
             <p className="text-sm text-muted-foreground">{customer.address}</p>
           )}
+          {(customer.ownerAge || customer.ownerCharacter) && (
+            <p className="text-sm text-muted-foreground">
+              {customer.ownerAge ? `${customer.ownerAge} tahun` : null}
+              {customer.ownerAge && customer.ownerCharacter ? " · " : ""}
+              {customer.ownerCharacter}
+            </p>
+          )}
         </div>
         <EditCustomerDialog customer={customer} />
       </div>

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { FileText } from "lucide-react";
+import Link from "next/link";
+import { FileText, ClipboardList } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { OrderTimeline } from "@/components/orders/OrderTimeline";
@@ -11,6 +12,8 @@ import { EditOrderDialog } from "@/components/orders/EditOrderDialog";
 import { WhatsappActions } from "@/components/orders/WhatsappActions";
 import { WhatsappHistoryCard } from "@/components/orders/WhatsappHistoryCard";
 import { CompleteOrderDialog } from "@/components/orders/CompleteOrderDialog";
+import { WorkChecklist } from "@/components/orders/WorkChecklist";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -18,7 +21,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { daysSince, defaultPhotoStageFor, STATUS_LABELS } from "@/lib/status";
+import {
+  daysSince,
+  defaultPhotoStageFor,
+  STATUS_LABELS,
+  SERVICE_TYPE_LABELS,
+} from "@/lib/status";
 
 export default async function OrderDetailPage({
   params,
@@ -54,6 +62,8 @@ export default async function OrderDetailPage({
             {order.watchBrand}
             {order.watchModel ? ` ${order.watchModel}` : ""} · {order.customer.name} (
             {order.customer.phone})
+            {order.customer.ownerAge ? ` · ${order.customer.ownerAge} th` : ""}
+            {order.customer.ownerCharacter ? ` · ${order.customer.ownerCharacter}` : ""}
           </p>
           <p className="text-xs text-muted-foreground">
             Sudah {daysSince(order.statusChangedAt)} hari di status{" "}
@@ -61,6 +71,10 @@ export default async function OrderDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" render={<Link href={`/orders/${order.id}/kartu-kerja`} />} nativeButton={false}>
+            <ClipboardList className="h-4 w-4" />
+            Kartu Kerja
+          </Button>
           <WhatsappActions
             orderId={order.id}
             order={order}
@@ -85,6 +99,12 @@ export default async function OrderDetailPage({
               <EditOrderDialog orderId={order.id} order={order} />
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
+              {order.serviceType && (
+                <div>
+                  <p className="text-muted-foreground">Jenis Service</p>
+                  <p>{SERVICE_TYPE_LABELS[order.serviceType]}</p>
+                </div>
+              )}
               {order.watchInfo && (
                 <div>
                   <p className="text-muted-foreground">Info Jam</p>
@@ -93,7 +113,7 @@ export default async function OrderDetailPage({
               )}
               {order.notes && (
                 <div>
-                  <p className="text-muted-foreground">Catatan Kondisi Awal</p>
+                  <p className="text-muted-foreground">Keterangan Masalah</p>
                   <p>{order.notes}</p>
                 </div>
               )}
@@ -141,7 +161,16 @@ export default async function OrderDetailPage({
           <WhatsappHistoryCard logs={order.whatsappLogs} />
         </div>
 
-        <div>
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Checklist Pengerjaan</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WorkChecklist status={order.status} />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Timeline</CardTitle>

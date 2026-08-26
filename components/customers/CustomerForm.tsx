@@ -14,6 +14,8 @@ const schema = z.object({
   phone: z.string().min(1, "No. HP wajib diisi."),
   email: z.string().email("Format email tidak valid.").optional().or(z.literal("")),
   address: z.string().optional(),
+  ownerAge: z.string().optional(),
+  ownerCharacter: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -24,6 +26,8 @@ export type CustomerRecord = {
   phone: string;
   email: string | null;
   address: string | null;
+  ownerAge: number | null;
+  ownerCharacter: string | null;
 };
 
 export function CustomerForm({
@@ -46,6 +50,8 @@ export function CustomerForm({
       phone: customer?.phone ?? "",
       email: customer?.email ?? "",
       address: customer?.address ?? "",
+      ownerAge: customer?.ownerAge != null ? String(customer.ownerAge) : "",
+      ownerCharacter: customer?.ownerCharacter ?? "",
     },
   });
 
@@ -55,7 +61,10 @@ export function CustomerForm({
       {
         method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          ownerAge: values.ownerAge ? Number(values.ownerAge) : undefined,
+        }),
       },
     );
 
@@ -92,6 +101,20 @@ export function CustomerForm({
       <div className="space-y-2">
         <Label htmlFor="customer-address">Alamat (opsional)</Label>
         <Textarea id="customer-address" rows={2} {...register("address")} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="customer-age">Usia Owner (opsional)</Label>
+          <Input id="customer-age" type="number" min={0} {...register("ownerAge")} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="customer-character">Karakter Owner (opsional)</Label>
+          <Input
+            id="customer-character"
+            placeholder="Misal: sabar, detail, buru-buru"
+            {...register("ownerCharacter")}
+          />
+        </div>
       </div>
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan Customer"}

@@ -7,6 +7,8 @@ const createSchema = z.object({
   phone: z.string().min(1),
   email: z.string().email().optional().or(z.literal("")),
   address: z.string().optional(),
+  ownerAge: z.coerce.number().int().positive().optional(),
+  ownerCharacter: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -27,9 +29,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Data customer tidak valid." }, { status: 400 });
   }
 
-  const { name, phone, email, address } = parsed.data;
+  const { name, phone, email, address, ownerAge, ownerCharacter } = parsed.data;
   const customer = await prisma.customer.create({
-    data: { name, phone, email: email || null, address: address || null },
+    data: {
+      name,
+      phone,
+      email: email || null,
+      address: address || null,
+      ownerAge: ownerAge ?? null,
+      ownerCharacter: ownerCharacter || null,
+    },
   });
   return NextResponse.json(customer, { status: 201 });
 }

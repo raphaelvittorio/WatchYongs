@@ -18,17 +18,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { SERVICE_TYPE_LABELS, ServiceType } from "@/lib/status";
 
 const NEW_CUSTOMER_VALUE = "__new__";
+const SERVICE_TYPES = Object.values(ServiceType);
 
 const schema = z
   .object({
     customerId: z.string().min(1, "Pilih customer."),
     customerName: z.string().optional(),
     customerPhone: z.string().optional(),
+    ownerAge: z.string().optional(),
+    ownerCharacter: z.string().optional(),
     watchBrand: z.string().min(1, "Merk jam wajib diisi."),
     watchModel: z.string().optional(),
     watchInfo: z.string().optional(),
+    serviceType: z.enum([ServiceType.BESAR, ServiceType.KECIL], {
+      message: "Pilih jenis service.",
+    }),
     notes: z.string().optional(),
   })
   .refine(
@@ -74,6 +81,8 @@ export function IntakeForm({
     if (values.customerId === NEW_CUSTOMER_VALUE) {
       formData.set("customerName", values.customerName ?? "");
       formData.set("customerPhone", values.customerPhone ?? "");
+      if (values.ownerAge) formData.set("ownerAge", values.ownerAge);
+      if (values.ownerCharacter) formData.set("ownerCharacter", values.ownerCharacter);
     } else {
       formData.set("customerId", values.customerId);
     }
@@ -81,6 +90,7 @@ export function IntakeForm({
     formData.set("watchBrand", values.watchBrand);
     if (values.watchModel) formData.set("watchModel", values.watchModel);
     if (values.watchInfo) formData.set("watchInfo", values.watchInfo);
+    formData.set("serviceType", values.serviceType);
     if (values.notes) formData.set("notes", values.notes);
     if (photos) {
       Array.from(photos).forEach((file) => formData.append("photos", file));
@@ -111,7 +121,16 @@ export function IntakeForm({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih customer..." />
+                    <SelectValue placeholder="Pilih customer...">
+                      {(value: string) =>
+                        value === NEW_CUSTOMER_VALUE
+                          ? "+ Customer Baru"
+                          : (() => {
+                              const c = customers.find((c) => c.id === value);
+                              return c ? `${c.name} · ${c.phone}` : value;
+                            })()
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {customers.map((c) => (
@@ -146,6 +165,18 @@ export function IntakeForm({
                   {errors.customerName.message}
                 </p>
               )}
+              <div className="space-y-2">
+                <Label htmlFor="ownerAge">Usia Owner (opsional)</Label>
+                <Input id="ownerAge" type="number" min={0} {...register("ownerAge")} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ownerCharacter">Karakter Owner (opsional)</Label>
+                <Input
+                  id="ownerCharacter"
+                  placeholder="Misal: sabar, detail, buru-buru"
+                  {...register("ownerCharacter")}
+                />
+              </div>
             </div>
           )}
 
@@ -173,7 +204,34 @@ export function IntakeForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Catatan Kondisi Awal</Label>
+            <Label>Jenis Service</Label>
+            <Controller
+              control={control}
+              name="serviceType"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih jenis service...">
+                      {(value: (typeof SERVICE_TYPES)[number]) => SERVICE_TYPE_LABELS[value]}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {SERVICE_TYPE_LABELS[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.serviceType && (
+              <p className="text-sm text-red-600">{errors.serviceType.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Keterangan Masalah</Label>
             <Textarea
               id="notes"
               rows={3}
