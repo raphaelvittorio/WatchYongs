@@ -65,7 +65,9 @@ model RepairOrder {
   photos          Photo[]
   statusHistory   StatusHistory[]
   assessment      Assessment?
-  invoice         Invoice?
+  invoiceId       String?
+  invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
+  invoiceItems    InvoiceItem[]
   whatsappLogs    WhatsappLog[]
 }
 
@@ -112,14 +114,25 @@ model Assessment {
 }
 
 model Invoice {
-  id            String      @id @default(cuid())
-  repairOrderId String      @unique
-  repairOrder   RepairOrder @relation(fields: [repairOrderId], references: [id], onDelete: Cascade)
-  invoiceNumber String      @unique
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
   amount        Int
   note          String?
   pdfPath       String
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime      @default(now())
+  items         InvoiceItem[]
+  orders        RepairOrder[]
+}
+
+model InvoiceItem {
+  id            String       @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  repairOrderId String?
+  repairOrder   RepairOrder? @relation(fields: [repairOrderId], references: [id])
+  description   String
+  amount        Int
+  sortOrder     Int          @default(0)
 }
 
 model WhatsappLog {

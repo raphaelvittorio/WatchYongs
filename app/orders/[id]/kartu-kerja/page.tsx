@@ -62,7 +62,7 @@ export default async function KartuKerjaPage({
       <div className="rounded-lg border bg-white p-6 text-black">
         <div className="mb-4 flex items-center justify-between border-b pb-3">
           <div>
-            <p className="text-lg font-bold">WatchYoung</p>
+            <p className="text-lg font-bold">WatchYongs</p>
             <p className="text-xs text-muted-foreground">Kartu Kerja Reparasi Jam</p>
           </div>
           <p className="text-sm font-medium">{order.orderNumber}</p>

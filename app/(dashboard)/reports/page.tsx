@@ -32,7 +32,10 @@ function monthLabel(key: string) {
 
 export default async function ReportsPage() {
   const invoices = await prisma.invoice.findMany({
-    include: { repairOrder: { include: { customer: true } } },
+    include: {
+      orders: { include: { customer: true }, orderBy: { createdAt: "asc" } },
+      items: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -60,16 +63,37 @@ export default async function ReportsPage() {
   }
   const maxMonthRevenue = Math.max(1, ...monthBuckets.map((b) => b.revenue));
 
+  // Item invoice sekarang ditandai per-order (repairOrderId), jadi revenue per order bisa dihitung
+  // akurat dari item yang benar-benar milik order itu. Invoice lama (dibuat sebelum item ditandai
+  // per-order) tidak punya tanda itu sama sekali — untuk kasus itu saja, fallback ke atribusi lama
+  // (seluruh nilai invoice dianggap milik order pertama/earliest createdAt).
+  const orderRevenues = invoices.flatMap((inv) => {
+    const isTagged = inv.items.some((item) => item.repairOrderId !== null);
+    if (isTagged) {
+      return inv.orders.map((order) => ({
+        order,
+        revenue: inv.items
+          .filter((item) => item.repairOrderId === order.id)
+          .reduce((sum, item) => sum + item.amount, 0),
+        invoiceCreatedAt: inv.createdAt,
+      }));
+    }
+    const firstOrder = inv.orders[0];
+    return firstOrder
+      ? [{ order: firstOrder, revenue: inv.amount, invoiceCreatedAt: inv.createdAt }]
+      : [];
+  });
+
   const serviceTypeKeys = [...Object.values(ServiceType), null] as (ServiceTypeType | null)[];
   const serviceBreakdown = serviceTypeKeys
     .map((type) => {
-      const matching = invoices.filter((inv) => inv.repairOrder.serviceType === type);
+      const matching = orderRevenues.filter((r) => r.order.serviceType === type);
       if (matching.length === 0) return null;
-      const revenue = matching.reduce((sum, inv) => sum + inv.amount, 0);
+      const revenue = matching.reduce((sum, r) => sum + r.revenue, 0);
       const avgDays =
-        matching.reduce((sum, inv) => {
+        matching.reduce((sum, r) => {
           const days =
-            (inv.createdAt.getTime() - inv.repairOrder.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+            (r.invoiceCreatedAt.getTime() - r.order.createdAt.getTime()) / (1000 * 60 * 60 * 24);
           return sum + days;
         }, 0) / matching.length;
       return {
@@ -191,17 +215,17 @@ export default async function ReportsPage() {
                 <TableRow key={invoice.id}>
                   <TableCell>
                     <Link
-                      href={`/orders/${invoice.repairOrderId}`}
+                      href={`/orders/${invoice.orders[0]?.id}`}
                       className="font-medium hover:underline"
                     >
                       {invoice.invoiceNumber}
                     </Link>
                   </TableCell>
-                  <TableCell>{invoice.repairOrder.orderNumber}</TableCell>
-                  <TableCell>{invoice.repairOrder.customer.name}</TableCell>
+                  <TableCell>{invoice.orders.map((o) => o.orderNumber).join(", ")}</TableCell>
+                  <TableCell>{invoice.orders[0]?.customer.name}</TableCell>
                   <TableCell>
-                    {invoice.repairOrder.serviceType
-                      ? SERVICE_TYPE_LABELS[invoice.repairOrder.serviceType]
+                    {invoice.orders[0]?.serviceType
+                      ? SERVICE_TYPE_LABELS[invoice.orders[0].serviceType]
                       : "-"}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">

@@ -28,7 +28,7 @@ export function Sidebar({ user }: { user: { name: string; email: string } }) {
     <aside className="flex w-64 shrink-0 flex-col border-r bg-background">
       <div className="flex items-center gap-2 border-b px-6 py-5">
         <Watch className="h-6 w-6" />
-        <span className="text-lg font-semibold">WatchYoung</span>
+        <span className="text-lg font-semibold">WatchYongs</span>
       </div>
       <nav className="flex-1 space-y-1 p-4">
         {NAV_ITEMS.map((item) => {

@@ -26,20 +26,31 @@ export async function GET(request: NextRequest) {
 
   const orders = await prisma.repairOrder.findMany({
     where,
-    include: { customer: true, invoice: true },
+    include: { customer: true, invoice: { include: { items: true } } },
     orderBy: { createdAt: "desc" },
   });
 
-  const rows = orders.map((order) => [
-    order.orderNumber,
-    order.customer.name,
-    order.customer.phone,
-    `${order.watchBrand}${order.watchModel ? ` ${order.watchModel}` : ""}`,
-    order.serviceType ? SERVICE_TYPE_LABELS[order.serviceType] : "",
-    STATUS_LABELS[order.status],
-    order.createdAt.toLocaleDateString("id-ID"),
-    order.invoice?.amount ?? "",
-  ]);
+  // Item invoice ditandai per-order (repairOrderId) sejak fitur invoice gabungan — pakai jumlah
+  // item yang benar-benar milik order ini kalau ada. Invoice lama/tidak ditandai (semua item
+  // repairOrderId-nya null) fallback ke total invoice penuh, sama seperti sebelumnya.
+  const rows = orders.map((order) => {
+    const taggedAmount = order.invoice?.items
+      .filter((item) => item.repairOrderId === order.id)
+      .reduce((sum, item) => sum + item.amount, 0);
+    const isTagged = order.invoice?.items.some((item) => item.repairOrderId !== null) ?? false;
+    const amount = isTagged ? taggedAmount : order.invoice?.amount;
+
+    return [
+      order.orderNumber,
+      order.customer.name,
+      order.customer.phone,
+      `${order.watchBrand}${order.watchModel ? ` ${order.watchModel}` : ""}`,
+      order.serviceType ? SERVICE_TYPE_LABELS[order.serviceType] : "",
+      STATUS_LABELS[order.status],
+      order.createdAt.toLocaleDateString("id-ID"),
+      amount ?? "",
+    ];
+  });
 
   const csv =
     "﻿" +

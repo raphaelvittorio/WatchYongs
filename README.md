@@ -1,11 +1,11 @@
-# WatchYoung — Sistem Reparasi Jam Tangan
+# WatchYongs — Sistem Reparasi Jam Tangan
 
 Dashboard internal untuk mengelola alur reparasi jam: Intake → Assessment → On Process → Completed → Picked Up.
 
 ## Tech Stack
 
 - **Next.js 16** (App Router, TypeScript) — dashboard + API dalam satu codebase
-- **Prisma ORM + SQLite** — database lokal (`prisma/dev.db`), gampang pindah ke PostgreSQL nanti tinggal ganti provider + `DATABASE_URL`
+- **Prisma ORM + MySQL/MariaDB** — database lokal lewat Laragon (`localhost:3307`), lihat `DATABASE_URL` di `.env`
 - **Tailwind CSS + shadcn/ui** (Base UI primitives)
 - **bcryptjs + jose** — auth staff (session cookie JWT, tanpa provider pihak ketiga)
 - **react-hook-form + zod** — validasi form
@@ -50,7 +50,7 @@ Tombol **"Backup Database"** di halaman `/users` men-download dump `.sql` lengka
 Restore dari file backup:
 
 ```bash
-mysql -u root watchyoung < watchyoung-backup-xxxxx.sql
+mysql -u root -P 3307 watchyoung < watchyoung-backup-xxxxx.sql
 ```
 
 ## Belum Dikerjakan (Roadmap)

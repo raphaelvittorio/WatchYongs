@@ -3,7 +3,8 @@ import { spawn } from "node:child_process";
 
 export const runtime = "nodejs";
 
-const MYSQLDUMP_PATH = process.env.MYSQLDUMP_PATH || "C:\\xampp\\mysql\\bin\\mysqldump.exe";
+const MYSQLDUMP_PATH =
+  process.env.MYSQLDUMP_PATH || "C:\\laragon\\bin\\mysql\\mysql-8.4.7-winx64\\bin\\mysqldump.exe";
 
 function parseDatabaseUrl(url: string) {
   const parsed = new URL(url);

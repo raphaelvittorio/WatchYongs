@@ -5,19 +5,24 @@ import { SERVICE_TYPE_LABELS } from "@/lib/status";
 
 export async function GET() {
   const invoices = await prisma.invoice.findMany({
-    include: { repairOrder: { include: { customer: true } } },
+    include: { orders: { include: { customer: true }, orderBy: { createdAt: "asc" } } },
     orderBy: { createdAt: "desc" },
   });
 
-  const rows = invoices.map((invoice) => [
-    invoice.invoiceNumber,
-    invoice.repairOrder.orderNumber,
-    invoice.repairOrder.customer.name,
-    `${invoice.repairOrder.watchBrand}${invoice.repairOrder.watchModel ? ` ${invoice.repairOrder.watchModel}` : ""}`,
-    invoice.repairOrder.serviceType ? SERVICE_TYPE_LABELS[invoice.repairOrder.serviceType] : "",
-    invoice.createdAt.toLocaleDateString("id-ID"),
-    invoice.amount,
-  ]);
+  const rows = invoices.map((invoice) => {
+    const mainOrder = invoice.orders[0];
+    return [
+      invoice.invoiceNumber,
+      invoice.orders.map((o) => o.orderNumber).join(", "),
+      mainOrder.customer.name,
+      invoice.orders
+        .map((o) => `${o.watchBrand}${o.watchModel ? ` ${o.watchModel}` : ""}`)
+        .join(", "),
+      mainOrder.serviceType ? SERVICE_TYPE_LABELS[mainOrder.serviceType] : "",
+      invoice.createdAt.toLocaleDateString("id-ID"),
+      invoice.amount,
+    ];
+  });
 
   const csv =
     "﻿" +

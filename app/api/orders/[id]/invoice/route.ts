@@ -9,11 +9,17 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const order = await prisma.repairOrder.findUnique({ where: { id } });
+  const order = await prisma.repairOrder.findUnique({
+    where: { id },
+    include: { invoice: true },
+  });
   if (!order) {
     return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
   }
+  if (order.invoice) {
+    return NextResponse.json(order.invoice, { status: 200 });
+  }
 
-  const invoice = await ensureInvoice(id);
+  const invoice = await ensureInvoice([id]);
   return NextResponse.json(invoice, { status: 201 });
 }

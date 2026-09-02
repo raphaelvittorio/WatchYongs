@@ -47,7 +47,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle>WatchYoung</CardTitle>
+        <CardTitle>WatchYongs</CardTitle>
         <CardDescription>
           Masuk untuk mengakses dashboard reparasi jam.
         </CardDescription>

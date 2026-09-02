@@ -42,7 +42,12 @@ export default async function OrderDetailPage({
       photos: { orderBy: { uploadedAt: "asc" } },
       statusHistory: { orderBy: { changedAt: "asc" } },
       assessment: true,
-      invoice: true,
+      invoice: {
+        include: {
+          items: { orderBy: { sortOrder: "asc" } },
+          orders: { orderBy: { orderNumber: "asc" } },
+        },
+      },
       whatsappLogs: { orderBy: { sentAt: "desc" } },
     },
   });
@@ -50,6 +55,32 @@ export default async function OrderDetailPage({
   if (!order) {
     notFound();
   }
+
+  const siblingOrdersRaw =
+    order.status === "ONPROCESS"
+      ? await prisma.repairOrder.findMany({
+          where: { customerId: order.customerId, status: "ONPROCESS", id: { not: order.id } },
+          include: { assessment: true },
+        })
+      : [];
+  const siblingOrders = siblingOrdersRaw.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    watchBrand: o.watchBrand,
+    watchModel: o.watchModel,
+    estimatedPrice: o.assessment?.estimatedPrice ?? 0,
+  }));
+
+  const otherInvoiceOrders = order.invoice?.orders.filter((o) => o.id !== order.id) ?? [];
+
+  const ownInvoiceItems = order.invoice
+    ? (() => {
+        const tagged = order.invoice.items.filter((item) => item.repairOrderId === order.id);
+        return tagged.length > 0 || order.invoice.items.length === 0
+          ? tagged
+          : order.invoice.items;
+      })()
+    : [];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -86,6 +117,11 @@ export default async function OrderDetailPage({
             <CompleteOrderDialog
               orderId={order.id}
               estimatedPrice={order.assessment?.estimatedPrice ?? 0}
+              customerName={order.customer.name}
+              mainOrderNumber={order.orderNumber}
+              mainWatchBrand={order.watchBrand}
+              mainWatchModel={order.watchModel}
+              siblingOrders={siblingOrders}
             />
           )}
           <StatusActions orderId={order.id} status={order.status} />
@@ -141,23 +177,41 @@ export default async function OrderDetailPage({
               <CardHeader>
                 <CardTitle className="text-base">Invoice</CardTitle>
               </CardHeader>
-              <CardContent className="flex items-center justify-between text-sm">
-                <div>
-                  <p className="font-medium">{order.invoice.invoiceNumber}</p>
-                  <p className="text-muted-foreground">
-                    Rp {order.invoice.amount.toLocaleString("id-ID")} ·{" "}
-                    {order.invoice.createdAt.toLocaleDateString("id-ID")}
+              <CardContent className="space-y-3 text-sm">
+                {otherInvoiceOrders.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Invoice ini juga mencakup:{" "}
+                    {otherInvoiceOrders.map((o) => o.orderNumber).join(", ")}
                   </p>
+                )}
+                {ownInvoiceItems.length > 0 && (
+                  <div className="space-y-1">
+                    {ownInvoiceItems.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{item.description}</span>
+                        <span>Rp {item.amount.toLocaleString("id-ID")}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t pt-3">
+                  <div>
+                    <p className="font-medium">{order.invoice.invoiceNumber}</p>
+                    <p className="text-muted-foreground">
+                      Rp {order.invoice.amount.toLocaleString("id-ID")} ·{" "}
+                      {order.invoice.createdAt.toLocaleDateString("id-ID")}
+                    </p>
+                  </div>
+                  <a
+                    href={order.invoice.pdfPath}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Lihat PDF
+                  </a>
                 </div>
-                <a
-                  href={order.invoice.pdfPath}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                >
-                  <FileText className="h-4 w-4" />
-                  Lihat PDF
-                </a>
               </CardContent>
             </Card>
           )}
