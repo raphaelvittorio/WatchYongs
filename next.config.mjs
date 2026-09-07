@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  // Shared hosting caps memory well below what parallel build workers need.
+  experimental: {
+    cpus: 1,
+    workerThreads: false,
+  },
 };
 
 export default nextConfig;
