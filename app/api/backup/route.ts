@@ -4,7 +4,10 @@ import { spawn } from "node:child_process";
 export const runtime = "nodejs";
 
 const MYSQLDUMP_PATH =
-  process.env.MYSQLDUMP_PATH || "C:\\laragon\\bin\\mysql\\mysql-8.4.7-winx64\\bin\\mysqldump.exe";
+  process.env.MYSQLDUMP_PATH ||
+  (process.platform === "win32"
+    ? "C:\\laragon\\bin\\mysql\\mysql-8.4.7-winx64\\bin\\mysqldump.exe"
+    : "mysqldump");
 
 function parseDatabaseUrl(url: string) {
   const parsed = new URL(url);
