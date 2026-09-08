@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { PrintButton } from "@/components/orders/PrintButton";
+import { Button } from "@/components/ui/button";
 import { getWorkChecklist, SERVICE_TYPE_LABELS } from "@/lib/status";
 
 function ChecklistBox({ checked }: { checked: boolean }) {
@@ -51,7 +52,7 @@ export default async function KartuKerjaPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4 sm:p-6">
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
         <Link
           href={`/orders/${order.id}`}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
@@ -59,7 +60,24 @@ export default async function KartuKerjaPage({
           <ArrowLeft className="h-4 w-4" />
           Kembali
         </Link>
-        <PrintButton />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            render={
+              <a
+                href={`/api/orders/${order.id}/tanda-terima`}
+                target="_blank"
+                rel="noreferrer"
+              />
+            }
+            nativeButton={false}
+            className="flex-1 sm:flex-none"
+          >
+            <FileText className="h-4 w-4" />
+            Tanda Terima (PDF)
+          </Button>
+          <PrintButton className="flex-1 sm:flex-none" />
+        </div>
       </div>
 
       <div className="rounded-lg border bg-white p-4 text-black sm:p-6 print:p-6">
@@ -77,6 +95,8 @@ export default async function KartuKerjaPage({
         <Field no={4} label="Nama Owner Jam" value={order.customer.name} />
         <Field no={5} label="Nomor Hape Owner" value={order.customer.phone} />
         <Field no={6} label="Keterangan Masalah" value={order.notes} />
+        {/* Field 7 ke bawah adalah catatan internal — tidak ikut tercetak di
+            tanda terima yang diberikan ke customer. */}
         <Field
           no={7}
           label="Usia Owner Jam"

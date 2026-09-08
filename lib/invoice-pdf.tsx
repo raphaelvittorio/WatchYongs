@@ -7,9 +7,9 @@ import {
   View,
   StyleSheet,
   renderToBuffer,
-  Svg,
-  Line,
 } from "@react-pdf/renderer";
+
+import { WatchLogo } from "@/lib/pdf-logo";
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 11, fontFamily: "Helvetica", color: "#1a1a1a" },
@@ -65,51 +65,6 @@ const styles = StyleSheet.create({
 
 function formatRupiah(amount: number) {
   return `Rp ${amount.toLocaleString("id-ID")}`;
-}
-
-function WatchLogo({ size = 40 }: { size?: number }) {
-  const cx = 50;
-  const cy = 50;
-  const tickCount = 48;
-  const ticks = Array.from({ length: tickCount }, (_, i) => {
-    const isCardinal = i % (tickCount / 4) === 0;
-    const rad = ((i * 360) / tickCount) * (Math.PI / 180);
-    const outerR = 46;
-    const innerR = isCardinal ? 34 : 40;
-    return (
-      <Line
-        key={i}
-        x1={cx + outerR * Math.sin(rad)}
-        y1={cy - outerR * Math.cos(rad)}
-        x2={cx + innerR * Math.sin(rad)}
-        y2={cy - innerR * Math.cos(rad)}
-        stroke="#333333"
-        strokeWidth={isCardinal ? 2.6 : 1.4}
-        strokeLinecap="round"
-      />
-    );
-  });
-
-  return (
-    <View style={{ width: size, height: size }}>
-      <Svg viewBox="0 0 100 100" style={{ width: size, height: size }}>
-        {ticks}
-      </Svg>
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: size,
-          height: size,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text style={{ fontSize: size * 0.32, fontFamily: "Helvetica-Bold" }}>WY</Text>
-      </View>
-    </View>
-  );
 }
 
 export type InvoicePdfData = {
