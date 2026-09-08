@@ -81,7 +81,7 @@ export function CustomerForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="customer-name">Nama</Label>
           <Input id="customer-name" {...register("name")} />
@@ -102,7 +102,7 @@ export function CustomerForm({
         <Label htmlFor="customer-address">Alamat (opsional)</Label>
         <Textarea id="customer-address" rows={2} {...register("address")} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="customer-age">Usia Owner (opsional)</Label>
           <Input id="customer-age" type="number" min={0} {...register("ownerAge")} />

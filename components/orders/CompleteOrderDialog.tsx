@@ -171,7 +171,7 @@ export function CompleteOrderDialog({
         <CheckCircle2 className="h-4 w-4" />
         Selesaikan & Buat Invoice
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Selesaikan Order</DialogTitle>
           <DialogDescription>
@@ -210,33 +210,39 @@ export function CompleteOrderDialog({
               <Label>Rincian Biaya — {group.label}</Label>
               <div className="space-y-2">
                 {group.items.map((item, itemIndex) => (
-                  <div key={itemIndex} className="flex items-center gap-2">
+                  <div
+                    key={itemIndex}
+                    className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                  >
                     <Input
                       placeholder="Keterangan (misal: Ganti Baterai)"
                       value={item.description}
                       onChange={(e) =>
                         updateItem(groupIndex, itemIndex, "description", e.target.value)
                       }
-                      className="flex-1"
+                      className="sm:flex-1"
                     />
-                    <Input
-                      type="number"
-                      min={0}
-                      placeholder="Harga (Rp)"
-                      value={item.amount}
-                      onChange={(e) => updateItem(groupIndex, itemIndex, "amount", e.target.value)}
-                      className="w-32"
-                    />
-                    {group.items.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => removeItem(groupIndex, itemIndex)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="Harga (Rp)"
+                        value={item.amount}
+                        onChange={(e) => updateItem(groupIndex, itemIndex, "amount", e.target.value)}
+                        className="flex-1 sm:w-32 sm:flex-none"
+                      />
+                      {group.items.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Hapus item"
+                          onClick={() => removeItem(groupIndex, itemIndex)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

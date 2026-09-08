@@ -12,6 +12,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { AlertList, type AlertItem } from "@/components/dashboard/AlertList";
 import { PickupReminders } from "@/components/dashboard/PickupReminders";
 import { StatusBadge } from "@/components/orders/StatusBadge";
+import { OrderCardList } from "@/components/orders/OrderCardList";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -84,14 +85,18 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Ringkasan order reparasi jam saat ini.
           </p>
         </div>
-        <Button render={<Link href="/orders/new" />} nativeButton={false}>
+        <Button
+          render={<Link href="/orders/new" />}
+          nativeButton={false}
+          className="w-full sm:w-auto"
+        >
           + Intake Baru
         </Button>
       </div>
@@ -114,46 +119,53 @@ export default async function DashboardPage() {
           <CardTitle className="text-base">Order Terbaru</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No. Order</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Jam</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Dibuat</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentOrders.length === 0 && (
+          <OrderCardList
+            className="md:hidden"
+            orders={recentOrders}
+            emptyLabel="Belum ada order."
+          />
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    Belum ada order.
-                  </TableCell>
+                  <TableHead>No. Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Jam</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Dibuat</TableHead>
                 </TableRow>
-              )}
-              {recentOrders.map((order) => (
-                <TableRow key={order.id} className="cursor-pointer">
-                  <TableCell>
-                    <Link href={`/orders/${order.id}`} className="font-medium hover:underline">
-                      {order.orderNumber}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{order.customer.name}</TableCell>
-                  <TableCell>
-                    {order.watchBrand}
-                    {order.watchModel ? ` ${order.watchModel}` : ""}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={order.status} />
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {order.createdAt.toLocaleDateString("id-ID")}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentOrders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      Belum ada order.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {recentOrders.map((order) => (
+                  <TableRow key={order.id} className="cursor-pointer">
+                    <TableCell>
+                      <Link href={`/orders/${order.id}`} className="font-medium hover:underline">
+                        {order.orderNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{order.customer.name}</TableCell>
+                    <TableCell>
+                      {order.watchBrand}
+                      {order.watchModel ? ` ${order.watchModel}` : ""}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {order.createdAt.toLocaleDateString("id-ID")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

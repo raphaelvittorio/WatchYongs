@@ -107,12 +107,17 @@ export default async function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Laporan</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Laporan</h1>
           <p className="text-sm text-muted-foreground">Ringkasan pendapatan dari invoice.</p>
         </div>
-        <Button variant="outline" render={<a href="/api/reports/export" />} nativeButton={false}>
+        <Button
+          variant="outline"
+          render={<a href="/api/reports/export" />}
+          nativeButton={false}
+          className="w-full sm:w-auto"
+        >
           Export CSV
         </Button>
       </div>
@@ -134,15 +139,17 @@ export default async function ReportsPage() {
         </CardHeader>
         <CardContent className="space-y-2">
           {monthBuckets.map((bucket) => (
-            <div key={bucket.key} className="flex items-center gap-3 text-sm">
-              <span className="w-16 shrink-0 text-muted-foreground">{monthLabel(bucket.key)}</span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+            <div key={bucket.key} className="flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
+              <span className="w-14 shrink-0 text-muted-foreground sm:w-16">
+                {monthLabel(bucket.key)}
+              </span>
+              <div className="h-2 min-w-8 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-primary"
                   style={{ width: `${(bucket.revenue / maxMonthRevenue) * 100}%` }}
                 />
               </div>
-              <span className="w-32 shrink-0 text-right text-muted-foreground">
+              <span className="w-24 shrink-0 text-right text-muted-foreground sm:w-32">
                 {formatRupiah(bucket.revenue)}
               </span>
             </div>
@@ -155,33 +162,55 @@ export default async function ReportsPage() {
           <CardTitle className="text-base">Berdasarkan Jenis Service</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Jenis Service</TableHead>
-                <TableHead className="text-right">Jumlah Order</TableHead>
-                <TableHead className="text-right">Total Pendapatan</TableHead>
-                <TableHead className="text-right">Rata-rata Waktu (Intake → Selesai)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {serviceBreakdown.length === 0 && (
+          <ul className="divide-y md:hidden">
+            {serviceBreakdown.length === 0 && (
+              <li className="py-6 text-center text-sm text-muted-foreground">
+                Belum ada invoice.
+              </li>
+            )}
+            {serviceBreakdown.map((row) => (
+              <li key={row.label} className="space-y-1 py-3 text-sm first:pt-0 last:pb-0">
+                <p className="font-medium">{row.label}</p>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{row.count} order</span>
+                  <span>{formatRupiah(row.revenue)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Rata-rata {row.avgDays} hari (intake → selesai)
+                </p>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    Belum ada invoice.
-                  </TableCell>
+                  <TableHead>Jenis Service</TableHead>
+                  <TableHead className="text-right">Jumlah Order</TableHead>
+                  <TableHead className="text-right">Total Pendapatan</TableHead>
+                  <TableHead className="text-right">Rata-rata Waktu (Intake → Selesai)</TableHead>
                 </TableRow>
-              )}
-              {serviceBreakdown.map((row) => (
-                <TableRow key={row.label}>
-                  <TableCell>{row.label}</TableCell>
-                  <TableCell className="text-right">{row.count}</TableCell>
-                  <TableCell className="text-right">{formatRupiah(row.revenue)}</TableCell>
-                  <TableCell className="text-right">{row.avgDays} hari</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {serviceBreakdown.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      Belum ada invoice.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {serviceBreakdown.map((row) => (
+                  <TableRow key={row.label}>
+                    <TableCell>{row.label}</TableCell>
+                    <TableCell className="text-right">{row.count}</TableCell>
+                    <TableCell className="text-right">{formatRupiah(row.revenue)}</TableCell>
+                    <TableCell className="text-right">{row.avgDays} hari</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -192,50 +221,83 @@ export default async function ReportsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No. Invoice</TableHead>
-                <TableHead>No. Order</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Jenis Service</TableHead>
-                <TableHead className="text-right">Tanggal</TableHead>
-                <TableHead className="text-right">Jumlah</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    Belum ada invoice.
-                  </TableCell>
-                </TableRow>
-              )}
-              {invoices.slice(0, 50).map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell>
-                    <Link
-                      href={`/orders/${invoice.orders[0]?.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {invoice.invoiceNumber}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{invoice.orders.map((o) => o.orderNumber).join(", ")}</TableCell>
-                  <TableCell>{invoice.orders[0]?.customer.name}</TableCell>
-                  <TableCell>
+          <ul className="divide-y md:hidden">
+            {invoices.length === 0 && (
+              <li className="py-6 text-center text-sm text-muted-foreground">
+                Belum ada invoice.
+              </li>
+            )}
+            {invoices.slice(0, 50).map((invoice) => (
+              <li key={invoice.id}>
+                <Link
+                  href={`/orders/${invoice.orders[0]?.id}`}
+                  className="-mx-2 block space-y-1 rounded-md px-2 py-3 transition-colors active:bg-muted"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-medium">{invoice.invoiceNumber}</span>
+                    <span className="text-sm font-medium">{formatRupiah(invoice.amount)}</span>
+                  </div>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {invoice.orders.map((o) => o.orderNumber).join(", ")} &middot;{" "}
+                    {invoice.orders[0]?.customer.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
                     {invoice.orders[0]?.serviceType
                       ? SERVICE_TYPE_LABELS[invoice.orders[0].serviceType]
-                      : "-"}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {invoice.createdAt.toLocaleDateString("id-ID")}
-                  </TableCell>
-                  <TableCell className="text-right">{formatRupiah(invoice.amount)}</TableCell>
+                      : "-"}{" "}
+                    &middot; {invoice.createdAt.toLocaleDateString("id-ID")}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>No. Invoice</TableHead>
+                  <TableHead>No. Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Jenis Service</TableHead>
+                  <TableHead className="text-right">Tanggal</TableHead>
+                  <TableHead className="text-right">Jumlah</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {invoices.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      Belum ada invoice.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {invoices.slice(0, 50).map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell>
+                      <Link
+                        href={`/orders/${invoice.orders[0]?.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {invoice.invoiceNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{invoice.orders.map((o) => o.orderNumber).join(", ")}</TableCell>
+                    <TableCell>{invoice.orders[0]?.customer.name}</TableCell>
+                    <TableCell>
+                      {invoice.orders[0]?.serviceType
+                        ? SERVICE_TYPE_LABELS[invoice.orders[0].serviceType]
+                        : "-"}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {invoice.createdAt.toLocaleDateString("id-ID")}
+                    </TableCell>
+                    <TableCell className="text-right">{formatRupiah(invoice.amount)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

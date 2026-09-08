@@ -33,7 +33,7 @@ export function UserRowActions({
   }
 
   return (
-    <div className="flex justify-end gap-2">
+    <div className="flex flex-wrap gap-2 md:justify-end">
       <ResetPasswordDialog userId={userId} userName={userName} />
       {!isSelf && !isLastUser && (
         <ConfirmDeleteDialog

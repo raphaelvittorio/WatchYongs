@@ -151,7 +151,7 @@ export function IntakeForm({
           </div>
 
           {isNewCustomer && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="customerName">Nama Customer</Label>
                 <Input id="customerName" {...register("customerName")} />
@@ -161,7 +161,7 @@ export function IntakeForm({
                 <Input id="customerPhone" {...register("customerPhone")} />
               </div>
               {errors.customerName && (
-                <p className="col-span-2 text-sm text-red-600">
+                <p className="text-sm text-red-600 sm:col-span-2">
                   {errors.customerName.message}
                 </p>
               )}
@@ -180,7 +180,7 @@ export function IntakeForm({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="watchBrand">Merk Jam</Label>
               <Input

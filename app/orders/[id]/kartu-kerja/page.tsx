@@ -18,12 +18,15 @@ function ChecklistBox({ checked }: { checked: boolean }) {
   );
 }
 
+// Di HP label ditumpuk di atas nilainya; layout dua kolom aslinya tetap
+// dipakai mulai sm dan saat dicetak.
 function Field({ no, label, value }: { no: number; label: string; value: React.ReactNode }) {
   return (
-    <div className="flex gap-3 border-b border-dashed py-2 text-sm last:border-b-0">
-      <span className="w-5 shrink-0 text-muted-foreground">{no}.</span>
-      <span className="w-40 shrink-0 text-muted-foreground">{label}</span>
-      <span className="flex-1">{value ?? "-"}</span>
+    <div className="flex flex-col border-b border-dashed py-2 text-sm last:border-b-0 sm:flex-row sm:gap-3 print:flex-row print:gap-3">
+      <span className="shrink-0 text-muted-foreground sm:w-48 print:w-48">
+        {no}. {label}
+      </span>
+      <span className="flex-1 break-words">{value ?? "-"}</span>
     </div>
   );
 }
@@ -47,7 +50,7 @@ export default async function KartuKerjaPage({
   const watchLabel = `${order.watchBrand}${order.watchModel ? ` ${order.watchModel}` : ""}`;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 p-6">
+    <div className="mx-auto max-w-2xl space-y-4 p-4 sm:p-6">
       <div className="flex items-center justify-between print:hidden">
         <Link
           href={`/orders/${order.id}`}
@@ -59,7 +62,7 @@ export default async function KartuKerjaPage({
         <PrintButton />
       </div>
 
-      <div className="rounded-lg border bg-white p-6 text-black">
+      <div className="rounded-lg border bg-white p-4 text-black sm:p-6 print:p-6">
         <div className="mb-4 flex items-center justify-between border-b pb-3">
           <div>
             <p className="text-lg font-bold">WatchYongs</p>
@@ -86,9 +89,8 @@ export default async function KartuKerjaPage({
           value={order.serviceType ? SERVICE_TYPE_LABELS[order.serviceType] : null}
         />
 
-        <div className="mt-2 flex gap-3 py-2 text-sm">
-          <span className="w-5 shrink-0" />
-          <span className="w-40 shrink-0 text-muted-foreground">Progress</span>
+        <div className="mt-2 flex flex-col py-2 text-sm sm:flex-row sm:gap-3 print:flex-row print:gap-3">
+          <span className="shrink-0 text-muted-foreground sm:w-48 print:w-48">Progress</span>
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
               <span className="w-5 text-muted-foreground">10.</span>

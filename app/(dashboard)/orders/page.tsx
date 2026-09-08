@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { StatusBadge } from "@/components/orders/StatusBadge";
+import { OrderCardList } from "@/components/orders/OrderCardList";
 import { STATUS_LABELS, OrderStatus, type OrderStatus as OrderStatusType } from "@/lib/status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,16 +80,25 @@ export default async function OrdersPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Order Reparasi</h1>
+          <h1 className="text-xl font-semibold sm:text-2xl">Order Reparasi</h1>
           <p className="text-sm text-muted-foreground">{total} order</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" render={<a href={exportHref} />} nativeButton={false}>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            render={<a href={exportHref} />}
+            nativeButton={false}
+            className="flex-1 sm:flex-none"
+          >
             Export CSV
           </Button>
-          <Button render={<Link href="/orders/new" />} nativeButton={false}>
+          <Button
+            render={<Link href="/orders/new" />}
+            nativeButton={false}
+            className="flex-1 sm:flex-none"
+          >
             + Intake Baru
           </Button>
         </div>
@@ -96,75 +106,84 @@ export default async function OrdersPage({
 
       <Card>
         <CardContent className="pt-6">
-          <form className="mb-4 flex flex-wrap gap-2" method="get">
+          <form className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap" method="get">
             <Input
               name="q"
               placeholder="Cari no. order, merk, atau nama customer..."
               defaultValue={q ?? ""}
-              className="max-w-xs"
+              className="w-full sm:max-w-xs"
             />
-            <select
-              name="status"
-              defaultValue={validStatus ?? "ALL"}
-              className="h-9 rounded-md border bg-transparent px-3 text-sm"
-            >
-              {STATUS_FILTERS.map((f) => (
-                <option key={f.value} value={f.value}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-            <Button type="submit" variant="secondary">
-              Filter
-            </Button>
+            <div className="flex gap-2">
+              <select
+                name="status"
+                defaultValue={validStatus ?? "ALL"}
+                className="h-9 min-w-0 flex-1 rounded-md border bg-transparent px-3 text-base sm:flex-none sm:text-sm"
+              >
+                {STATUS_FILTERS.map((f) => (
+                  <option key={f.value} value={f.value}>
+                    {f.label}
+                  </option>
+                ))}
+              </select>
+              <Button type="submit" variant="secondary" className="shrink-0">
+                Filter
+              </Button>
+            </div>
           </form>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No. Order</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Jam</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Dibuat</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orders.length === 0 && (
+          <OrderCardList
+            className="md:hidden"
+            orders={orders}
+            emptyLabel="Tidak ada order yang cocok."
+          />
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    Tidak ada order yang cocok.
-                  </TableCell>
+                  <TableHead>No. Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Jam</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Dibuat</TableHead>
                 </TableRow>
-              )}
-              {orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell>
-                    <Link
-                      href={`/orders/${order.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {order.orderNumber}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{order.customer.name}</TableCell>
-                  <TableCell>
-                    {order.watchBrand}
-                    {order.watchModel ? ` ${order.watchModel}` : ""}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={order.status} />
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {order.createdAt.toLocaleDateString("id-ID")}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {orders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      Tidak ada order yang cocok.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{order.customer.name}</TableCell>
+                    <TableCell>
+                      {order.watchBrand}
+                      {order.watchModel ? ` ${order.watchModel}` : ""}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {order.createdAt.toLocaleDateString("id-ID")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
           {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+            <div className="mt-4 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
               <span>
                 Halaman {page} dari {totalPages}
               </span>

@@ -87,7 +87,7 @@ export default async function OrderDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold">{order.orderNumber}</h1>
+            <h1 className="text-xl font-semibold sm:text-2xl">{order.orderNumber}</h1>
             <StatusBadge status={order.status} />
           </div>
           <p className="text-sm text-muted-foreground">
@@ -102,7 +102,7 @@ export default async function OrderDetailPage({
             {STATUS_LABELS[order.status]}.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Button variant="outline" size="sm" render={<Link href={`/orders/${order.id}/kartu-kerja`} />} nativeButton={false}>
             <ClipboardList className="h-4 w-4" />
             Kartu Kerja
@@ -194,7 +194,7 @@ export default async function OrderDetailPage({
                     ))}
                   </div>
                 )}
-                <div className="flex items-center justify-between border-t pt-3">
+                <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-medium">{order.invoice.invoiceNumber}</p>
                     <p className="text-muted-foreground">

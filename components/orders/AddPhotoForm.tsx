@@ -58,10 +58,10 @@ export function AddPhotoForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-2">
+    <form onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
       <div className="space-y-1">
         <Select value={stage} onValueChange={(v) => setStage(v as PhotoStage)}>
-          <SelectTrigger size="sm" className="w-40">
+          <SelectTrigger size="sm" className="w-full sm:w-40">
             <SelectValue>{(value: PhotoStage) => PHOTO_STAGE_LABELS[value]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -77,10 +77,16 @@ export function AddPhotoForm({
         type="file"
         accept="image/jpeg,image/png,image/webp,image/heic"
         multiple
-        className="max-w-xs"
+        className="w-full sm:max-w-xs"
         onChange={(e) => setFiles(e.target.files)}
       />
-      <Button type="submit" size="sm" variant="secondary" disabled={submitting}>
+      <Button
+        type="submit"
+        size="sm"
+        variant="secondary"
+        disabled={submitting}
+        className="w-full sm:w-auto"
+      >
         {submitting ? "Mengupload..." : "+ Tambah Foto"}
       </Button>
     </form>

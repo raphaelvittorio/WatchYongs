@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { StatusBadge } from "@/components/orders/StatusBadge";
+import { OrderCardList } from "@/components/orders/OrderCardList";
 import { EditCustomerDialog } from "@/components/customers/EditCustomerDialog";
 import { DeleteCustomerButton } from "@/components/customers/DeleteCustomerButton";
 import {
@@ -36,9 +37,9 @@ export default async function CustomerDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{customer.name}</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold break-words sm:text-2xl">{customer.name}</h1>
           <p className="text-sm text-muted-foreground">
             {customer.phone}
             {customer.email ? ` · ${customer.email}` : ""}
@@ -69,47 +70,55 @@ export default async function CustomerDetailPage({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No. Order</TableHead>
-                <TableHead>Jam</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Dibuat</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {customer.orders.length === 0 && (
+          <OrderCardList
+            className="md:hidden"
+            orders={customer.orders}
+            emptyLabel="Belum ada order."
+            showCustomer={false}
+          />
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    Belum ada order.
-                  </TableCell>
+                  <TableHead>No. Order</TableHead>
+                  <TableHead>Jam</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Dibuat</TableHead>
                 </TableRow>
-              )}
-              {customer.orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell>
-                    <Link
-                      href={`/orders/${order.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {order.orderNumber}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    {order.watchBrand}
-                    {order.watchModel ? ` ${order.watchModel}` : ""}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={order.status} />
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {order.createdAt.toLocaleDateString("id-ID")}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {customer.orders.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      Belum ada order.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {customer.orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell>
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="font-medium hover:underline"
+                      >
+                        {order.orderNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      {order.watchBrand}
+                      {order.watchModel ? ` ${order.watchModel}` : ""}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={order.status} />
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {order.createdAt.toLocaleDateString("id-ID")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
