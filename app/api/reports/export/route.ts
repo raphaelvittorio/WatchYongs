@@ -3,12 +3,19 @@ import { prisma } from "@/lib/db";
 import { toCsv } from "@/lib/csv";
 import { SERVICE_TYPE_LABELS } from "@/lib/status";
 import { denyUnlessMaster } from "@/lib/auth";
+import { filterWhere, requireScopeApi } from "@/lib/branch";
 
 export async function GET() {
   const denied = await denyUnlessMaster();
   if (denied) return denied;
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
   const invoices = await prisma.invoice.findMany({
-    include: { orders: { include: { customer: true }, orderBy: { createdAt: "asc" } } },
+    where: filterWhere(scope),
+    include: {
+      branch: true,
+      orders: { include: { customer: true }, orderBy: { createdAt: "asc" } },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -16,6 +23,7 @@ export async function GET() {
     const mainOrder = invoice.orders[0];
     return [
       invoice.invoiceNumber,
+      invoice.branch.name,
       invoice.orders.map((o) => o.orderNumber).join(", "),
       mainOrder.customer.name,
       invoice.orders
@@ -30,7 +38,7 @@ export async function GET() {
   const csv =
     "﻿" +
     toCsv(
-      ["No. Invoice", "No. Order", "Customer", "Jam", "Jenis Service", "Tanggal", "Jumlah (Rp)"],
+      ["No. Invoice", "Cabang", "No. Order", "Customer", "Jam", "Jenis Service", "Tanggal", "Jumlah (Rp)"],
       rows,
     );
 

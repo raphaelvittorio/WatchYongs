@@ -35,6 +35,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Staff tanpa cabang tidak punya data apa pun untuk dilihat, jadi ditolak
+  // di sini daripada masuk ke dashboard kosong.
+  if (user.role === "STAFF" && !user.branchId) {
+    return NextResponse.json(
+      { error: "Akun staff belum diberi cabang. Hubungi master." },
+      { status: 403 },
+    );
+  }
+
   await createSession(user.id);
   return NextResponse.json({ ok: true });
 }

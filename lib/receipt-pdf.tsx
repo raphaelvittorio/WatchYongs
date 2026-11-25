@@ -9,7 +9,7 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 
-import { WatchLogo } from "@/lib/pdf-logo";
+import { WatchLogo, branchContactLine, type PdfBranch } from "@/lib/pdf-logo";
 
 const styles = StyleSheet.create({
   page: { padding: 28, fontSize: 10, fontFamily: "Helvetica", color: "#1a1a1a" },
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
 });
 
 export type ReceiptPdfData = {
+  branch: PdfBranch;
   orderNumber: string;
   createdAt: Date;
   watchLabel: string;
@@ -85,7 +86,10 @@ function ReceiptDocument({ data }: { data: ReceiptPdfData }) {
             </View>
             <View>
               <Text style={styles.shopName}>WatchYongs</Text>
-              <Text style={styles.muted}>Jasa Reparasi Jam Tangan</Text>
+              <Text style={styles.muted}>Jasa Reparasi Jam Tangan · Cabang {data.branch.name}</Text>
+              {branchContactLine(data.branch) && (
+                <Text style={styles.muted}>{branchContactLine(data.branch)}</Text>
+              )}
             </View>
           </View>
           <View>

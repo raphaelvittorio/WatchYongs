@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Mail, MapPin, Phone, Plus } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { accessWhere, requireScopePage } from "@/lib/branch";
 import { isMaster } from "@/lib/roles";
 import { OrderCardList } from "@/components/orders/OrderCardList";
 import { OrderTable } from "@/components/orders/OrderTable";
@@ -28,10 +28,21 @@ export default async function CustomerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getCurrentUser();
+  const scope = await requireScopePage();
+  const { user } = scope;
+  // Data customer dipakai bersama semua cabang, tapi staff hanya melihat
+  // riwayat order cabangnya sendiri (jumlah order cabang lain pun tidak).
+  const isAllBranchView = scope.accessBranchId === null;
   const customer = await prisma.customer.findUnique({
     where: { id },
-    include: { orders: { orderBy: { createdAt: "desc" } } },
+    include: {
+      branch: true,
+      orders: {
+        where: accessWhere(scope),
+        include: { branch: true },
+        orderBy: { createdAt: "desc" },
+      },
+    },
   });
 
   if (!customer) {
@@ -69,7 +80,8 @@ export default async function CustomerDetailPage({
             <div>
               <h2 className="text-xl font-bold break-words">{customer.name}</h2>
               <p className="text-sm text-muted-foreground">
-                Customer sejak {formatLongDate(customer.createdAt)}
+                Customer sejak {formatLongDate(customer.createdAt)} · terdaftar di{" "}
+                {customer.branch.name}
               </p>
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
@@ -144,11 +156,13 @@ export default async function CustomerDetailPage({
             orders={customer.orders}
             emptyLabel="Belum ada order."
             showCustomer={false}
+            showBranch={isAllBranchView}
           />
           <div className="hidden md:block">
             <OrderTable
               orders={customer.orders}
               showCustomer={false}
+              showBranch={isAllBranchView}
               emptyLabel="Belum ada order."
             />
           </div>

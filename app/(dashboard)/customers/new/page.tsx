@@ -1,13 +1,13 @@
-"use client";
-
-import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
+import { branchFieldOptions, requireScopePage } from "@/lib/branch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CustomerForm } from "@/components/customers/CustomerForm";
+import { NewCustomerForm } from "@/components/customers/NewCustomerForm";
 import { PageHeader } from "@/components/shared/PageHeader";
 
-export default function NewCustomerPage() {
-  const router = useRouter();
+export const metadata = { title: "Customer Baru" };
+
+export default async function NewCustomerPage() {
+  const scope = await requireScopePage();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -29,12 +29,7 @@ export default function NewCustomerPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <CustomerForm
-            onSuccess={(customer) => {
-              router.push(`/customers/${customer.id}`);
-              router.refresh();
-            }}
-          />
+          <NewCustomerForm branchOptions={branchFieldOptions(scope)} />
         </CardContent>
       </Card>
     </div>

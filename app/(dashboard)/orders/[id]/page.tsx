@@ -12,7 +12,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { requireScopePage, scopedOrderWhere } from "@/lib/branch";
 import { isMaster } from "@/lib/roles";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { OrderTimeline } from "@/components/orders/OrderTimeline";
@@ -29,6 +29,7 @@ import { WorkChecklist } from "@/components/orders/WorkChecklist";
 import { DeleteOrderButton } from "@/components/orders/DeleteOrderButton";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { UserAvatar } from "@/components/shared/UserAvatar";
+import { BranchBadge } from "@/components/shared/BranchBadge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -69,11 +70,14 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getCurrentUser();
-  const order = await prisma.repairOrder.findUnique({
-    where: { id },
+  const scope = await requireScopePage();
+  const { user } = scope;
+  // Order cabang lain → null → 404 (staff). Master bisa membuka semua cabang.
+  const order = await prisma.repairOrder.findFirst({
+    where: scopedOrderWhere(scope, id),
     include: {
       customer: true,
+      branch: true,
       photos: { orderBy: { uploadedAt: "asc" } },
       statusHistory: { orderBy: { changedAt: "asc" } },
       assessment: true,
@@ -94,7 +98,13 @@ export default async function OrderDetailPage({
   const siblingOrdersRaw =
     order.status === "ONPROCESS"
       ? await prisma.repairOrder.findMany({
-          where: { customerId: order.customerId, status: "ONPROCESS", id: { not: order.id } },
+          // Invoice gabungan hanya untuk order di cabang yang sama.
+          where: {
+            customerId: order.customerId,
+            branchId: order.branchId,
+            status: "ONPROCESS",
+            id: { not: order.id },
+          },
           include: { assessment: true },
         })
       : [];
@@ -128,6 +138,7 @@ export default async function OrderDetailPage({
           <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <span className="font-mono">{order.orderNumber}</span>
             <StatusBadge status={order.status} className="h-7 px-3 text-[13px]" />
+            <BranchBadge branch={order.branch} className="px-2.5 py-1 text-xs" />
           </span>
         }
         description={

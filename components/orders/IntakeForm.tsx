@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhotoPicker } from "@/components/orders/PhotoPicker";
+import { BranchField, type BranchFieldOptions } from "@/components/branches/BranchField";
 import { SERVICE_TYPE_LABELS, ServiceType } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
@@ -65,10 +66,14 @@ type FormValues = z.infer<typeof schema>;
 
 export function IntakeForm({
   customers,
+  branchOptions,
 }: {
   customers: { id: string; name: string; phone: string }[];
+  branchOptions: BranchFieldOptions;
 }) {
   const router = useRouter();
+  const [branchId, setBranchId] = useState(branchOptions.defaultBranchId ?? "");
+  const [branchError, setBranchError] = useState<string>();
   const [photos, setPhotos] = useState<FileList | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -89,7 +94,12 @@ export function IntakeForm({
 
   async function onSubmit(values: FormValues) {
     setSubmitError(null);
+    if (!branchId) {
+      setBranchError("Pilih cabang tempat jam diterima.");
+      return;
+    }
     const formData = new FormData();
+    formData.set("branchId", branchId);
 
     if (values.customerId === NEW_CUSTOMER_VALUE) {
       formData.set("customerName", values.customerName ?? "");
@@ -128,8 +138,23 @@ export function IntakeForm({
         step={1}
         icon={UserRound}
         title="Customer"
-        description="Pilih customer lama atau daftarkan yang baru."
+        description="Pilih customer lama (dari cabang mana pun) atau daftarkan yang baru."
       >
+        <BranchField
+          id="intake-branch"
+          options={branchOptions}
+          value={branchId}
+          onChange={(next) => {
+            setBranchId(next);
+            setBranchError(undefined);
+          }}
+          error={branchError}
+          hint={
+            branchOptions.locked
+              ? "Order otomatis tercatat di cabang akunmu."
+              : "Nomor order mengikuti cabang yang dipilih."
+          }
+        />
         <div className="space-y-2">
           <Label>Customer</Label>
           <Controller

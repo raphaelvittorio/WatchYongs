@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ChevronRight, Plus, Search, Users, X } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { branchLabel, customerListWhere, filterWhere, requireScopePage } from "@/lib/branch";
+import { BranchBadge } from "@/components/shared/BranchBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { UserAvatar } from "@/components/shared/UserAvatar";
@@ -25,21 +27,31 @@ export default async function CustomersPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const where = q
-    ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }] }
-    : undefined;
+  const scope = await requireScopePage();
+  // Pencarian menjangkau customer semua cabang; jumlah & order terakhir tetap
+  // hanya menghitung order cabang yang sedang dilihat.
+  const orderWhere = filterWhere(scope);
 
   const [customers, totalCustomers] = await Promise.all([
     prisma.customer.findMany({
-      where,
+      where: customerListWhere(scope, q),
       orderBy: { name: "asc" },
       include: {
-        _count: { select: { orders: true } },
-        orders: { select: { createdAt: true }, orderBy: { createdAt: "desc" }, take: 1 },
+        branch: true,
+        _count: { select: { orders: { where: orderWhere } } },
+        orders: {
+          where: orderWhere,
+          select: { createdAt: true },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     }),
-    prisma.customer.count(),
+    prisma.customer.count({ where: customerListWhere(scope, null) }),
   ]);
+  // Tandai customer dari cabang asal lain (hasil pencarian lintas cabang).
+  const showHomeBranch = (branchId: string) =>
+    scope.filterBranchId === null || branchId !== scope.filterBranchId;
 
   return (
     <div className="space-y-6">
@@ -47,8 +59,8 @@ export default async function CustomersPage({
         title="Customer"
         description={
           q
-            ? `${customers.length} dari ${totalCustomers} customer cocok dengan "${q}"`
-            : `${totalCustomers} customer terdaftar`
+            ? `${customers.length} customer dari semua cabang cocok dengan "${q}"`
+            : `${branchLabel(scope.branch)} · ${totalCustomers} customer`
         }
         actions={
           <Button render={<Link href="/customers/new" />} nativeButton={false}>
@@ -118,7 +130,10 @@ export default async function CustomersPage({
                     <UserAvatar name={customer.name} size="md" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{customer.name}</p>
-                      <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {customer.phone}
+                        {showHomeBranch(customer.branchId) && <BranchBadge branch={customer.branch} />}
+                      </p>
                     </div>
                     <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums">
                       {customer._count.orders} order
@@ -159,6 +174,9 @@ export default async function CustomersPage({
                               <p className="max-w-60 truncate text-xs text-muted-foreground">
                                 {customer.email}
                               </p>
+                            )}
+                            {showHomeBranch(customer.branchId) && (
+                              <BranchBadge branch={customer.branch} className="mt-1" />
                             )}
                           </div>
                         </div>

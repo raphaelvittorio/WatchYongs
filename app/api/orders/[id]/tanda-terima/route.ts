@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateReceiptPdf } from "@/lib/receipt-pdf";
+import { requireScopeApi, scopedOrderWhere } from "@/lib/branch";
 
 export const runtime = "nodejs";
 
@@ -11,9 +12,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const order = await prisma.repairOrder.findUnique({
-    where: { id },
-    include: { customer: true },
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
+  const order = await prisma.repairOrder.findFirst({
+    where: scopedOrderWhere(scope, id),
+    include: { customer: true, branch: true },
   });
 
   if (!order) {
@@ -21,6 +24,7 @@ export async function GET(
   }
 
   const pdf = await generateReceiptPdf({
+    branch: { name: order.branch.name, address: order.branch.address, phone: order.branch.phone },
     orderNumber: order.orderNumber,
     createdAt: order.createdAt,
     watchLabel: `${order.watchBrand}${order.watchModel ? ` ${order.watchModel}` : ""}`,

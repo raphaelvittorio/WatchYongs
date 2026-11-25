@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ensureInvoice } from "@/lib/invoice";
+import { requireScopeApi, scopedOrderWhere } from "@/lib/branch";
 
 export const runtime = "nodejs";
 
@@ -9,8 +10,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const order = await prisma.repairOrder.findUnique({
-    where: { id },
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
+  const order = await prisma.repairOrder.findFirst({
+    where: scopedOrderWhere(scope, id),
     include: { invoice: true },
   });
   if (!order) {

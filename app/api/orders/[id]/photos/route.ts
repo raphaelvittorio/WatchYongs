@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireScopeApi, scopedOrderWhere } from "@/lib/branch";
 import { PhotoStage } from "@/lib/status";
 import {
   extractPhotoFiles,
@@ -17,7 +18,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const order = await prisma.repairOrder.findUnique({ where: { id } });
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
+  const order = await prisma.repairOrder.findFirst({ where: scopedOrderWhere(scope, id) });
   if (!order) {
     return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
   }

@@ -28,6 +28,7 @@ type OrderInfo = {
   watchModel: string | null;
   status: OrderStatus;
   statusChangedAt: Date;
+  branch?: { name: string };
 };
 
 type CustomerInfo = { name: string; phone: string };

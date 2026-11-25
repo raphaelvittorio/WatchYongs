@@ -16,9 +16,13 @@ export async function ensureInvoice(
 ) {
   const orders = await prisma.repairOrder.findMany({
     where: { id: { in: orderIds } },
-    include: { customer: true, assessment: true },
+    include: { customer: true, assessment: true, branch: true },
   });
   const mainOrder = orders[0];
+  const branch = mainOrder.branch;
+  if (orders.some((order) => order.branchId !== branch.id)) {
+    throw new Error("Invoice gabungan harus berisi order dari cabang yang sama.");
+  }
 
   const items =
     opts?.items && opts.items.length > 0
@@ -30,10 +34,11 @@ export async function ensureInvoice(
         }));
   const amount = items.reduce((sum, item) => sum + item.amount, 0);
   const note = opts?.note?.trim() || null;
-  const invoiceNumber = await generateInvoiceNumber();
+  const invoiceNumber = await generateInvoiceNumber(branch);
   const createdAt = new Date();
 
   const pdfBuffer = await generateInvoicePdf({
+    branch: { name: branch.name, address: branch.address, phone: branch.phone },
     invoiceNumber,
     createdAt,
     amount,
@@ -58,11 +63,14 @@ export async function ensureInvoice(
   const uploadDir = uploadPath("invoices");
   await mkdir(uploadDir, { recursive: true });
   const filename = `invoice-${invoiceNumber}.pdf`;
-  await writeFile(path.join(uploadDir, filename), pdfBuffer);
+  // "wx": gagal kalau file sudah ada, daripada diam-diam menimpa invoice lain
+  // dengan nomor yang sama.
+  await writeFile(path.join(uploadDir, filename), pdfBuffer, { flag: "wx" });
 
   return prisma.invoice.create({
     data: {
       invoiceNumber,
+      branchId: branch.id,
       amount,
       note,
       createdAt,

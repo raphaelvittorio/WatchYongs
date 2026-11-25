@@ -21,16 +21,29 @@ async function main() {
     update: {},
     create: { name: "Admin WatchYongs", email: "admin@watchyoung.local", passwordHash, role: "MASTER" },
   });
+  // Staff demo per cabang, untuk mencoba pembatasan data antar cabang secara lokal.
+  // Cabangnya sendiri (golden8, hampton) dibuat oleh migrasi add_branches.
+  await prisma.user.upsert({
+    where: { email: "staff-golden8@watchyoung.local" },
+    update: {},
+    create: { name: "Staff Golden 8", email: "staff-golden8@watchyoung.local", passwordHash, role: "STAFF", branchId: "golden8" },
+  });
+  await prisma.user.upsert({
+    where: { email: "staff-hampton@watchyoung.local" },
+    update: {},
+    create: { name: "Staff Hampton", email: "staff-hampton@watchyoung.local", passwordHash, role: "STAFF", branchId: "hampton" },
+  });
 
   const [hery, budi, siti] = await Promise.all([
-    prisma.customer.create({ data: { name: "Pak Hery", phone: "0812-1122-3344" } }),
-    prisma.customer.create({ data: { name: "Budi Santoso", phone: "0812-3456-7890" } }),
-    prisma.customer.create({ data: { name: "Siti Aminah", phone: "0812-9876-5432" } }),
+    prisma.customer.create({ data: { name: "Pak Hery", phone: "0812-1122-3344", branchId: "golden8" } }),
+    prisma.customer.create({ data: { name: "Budi Santoso", phone: "0812-3456-7890", branchId: "golden8" } }),
+    prisma.customer.create({ data: { name: "Siti Aminah", phone: "0812-9876-5432", branchId: "hampton" } }),
   ]);
 
   const seedOrders = [
     {
       orderNumber: "WY-0001",
+      branchId: "golden8",
       customerId: hery.id,
       watchBrand: "Rolex",
       watchModel: "Datejust",
@@ -41,6 +54,7 @@ async function main() {
     },
     {
       orderNumber: "WY-0002",
+      branchId: "golden8",
       customerId: budi.id,
       watchBrand: "Seiko",
       watchModel: "5 Sports",
@@ -50,7 +64,8 @@ async function main() {
       notes: "Ganti tali & servis kecil.",
     },
     {
-      orderNumber: "WY-0003",
+      orderNumber: "WYH-0001",
+      branchId: "hampton",
       customerId: siti.id,
       watchBrand: "Casio",
       watchModel: "Edifice",
@@ -61,6 +76,7 @@ async function main() {
     },
     {
       orderNumber: "WY-0004",
+      branchId: "golden8",
       customerId: budi.id,
       watchBrand: "Fossil",
       watchModel: "Grant",
@@ -75,6 +91,7 @@ async function main() {
     const created = await prisma.repairOrder.create({
       data: {
         orderNumber: order.orderNumber,
+        branchId: order.branchId,
         customerId: order.customerId,
         watchBrand: order.watchBrand,
         watchModel: order.watchModel,
@@ -108,7 +125,7 @@ async function main() {
       });
     }
 
-    if (order.orderNumber === "WY-0003") {
+    if (order.orderNumber === "WYH-0001") {
       await prisma.assessment.create({
         data: {
           repairOrderId: created.id,
@@ -120,15 +137,19 @@ async function main() {
     }
   }
 
-  await prisma.counter.upsert({
-    where: { id: "order_number" },
-    update: { value: seedOrders.length },
-    create: { id: "order_number", value: seedOrders.length },
-  });
+  // Golden 8 memakai counter lama tanpa sufiks (lihat lib/order-number.ts).
+  const counters = [
+    { id: "order_number", value: 4 },
+    { id: "order_number:hampton", value: 1 },
+  ];
+  for (const { id, value } of counters) {
+    await prisma.counter.upsert({ where: { id }, update: { value }, create: { id, value } });
+  }
 
   console.log("Seed selesai. Login staff:");
   console.log("  email:    admin@watchyoung.local");
   console.log("  password: watchyoung123");
+  console.log("Staff demo: staff-golden8@watchyoung.local / staff-hampton@watchyoung.local (password sama)");
 }
 
 main()

@@ -2,7 +2,13 @@ type OrderInfo = {
   orderNumber: string;
   watchBrand: string;
   watchModel: string | null;
+  branch?: { name: string };
 };
+
+// Dengan 2 toko, customer perlu tahu jamnya diambil di cabang mana.
+function pickupPlace(order: OrderInfo) {
+  return order.branch ? `di toko WatchYongs ${order.branch.name}` : "di toko";
+}
 
 type CustomerInfo = {
   name: string;
@@ -36,7 +42,7 @@ export function buildCompletedMessage(opts: { order: OrderInfo; customer: Custom
   return [
     `Halo ${opts.customer.name},`,
     ``,
-    `Jam ${watchLabel(opts.order)} (${opts.order.orderNumber}) sudah selesai kami perbaiki dan bisa diambil di toko.`,
+    `Jam ${watchLabel(opts.order)} (${opts.order.orderNumber}) sudah selesai kami perbaiki dan bisa diambil ${pickupPlace(opts.order)}.`,
     ``,
     `Mohon diambil dalam 3 minggu dari sekarang. Setelah itu akan dikenakan biaya penyimpanan. Terima kasih 🙏`,
   ].join("\n");
@@ -51,7 +57,7 @@ export function buildOverdueReminderMessage(opts: {
   return [
     `Halo ${opts.customer.name},`,
     ``,
-    `Jam ${watchLabel(opts.order)} (${opts.order.orderNumber}) sudah selesai ${opts.daysOverdue} hari dan belum diambil.`,
+    `Jam ${watchLabel(opts.order)} (${opts.order.orderNumber}) sudah selesai ${opts.daysOverdue} hari dan belum diambil ${pickupPlace(opts.order)}.`,
     nearStorageFee
       ? `Karena sudah lebih dari 3 minggu, mohon segera diambil untuk menghindari biaya penyimpanan.`
       : `Mohon diambil sebelum 3 minggu sejak selesai untuk menghindari biaya penyimpanan.`,

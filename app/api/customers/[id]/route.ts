@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { denyUnlessMaster } from "@/lib/auth";
+import { requireScopeApi } from "@/lib/branch";
 
+// Data customer dipakai bersama semua cabang, jadi cukup login (tanpa filter
+// cabang). Riwayat order-nya yang dibatasi per cabang, di halaman detail.
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const { denied } = await requireScopeApi();
+  if (denied) return denied;
   const { id } = await params;
   const customer = await prisma.customer.findUnique({ where: { id } });
   if (!customer) {
@@ -28,6 +33,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const { denied } = await requireScopeApi();
+  if (denied) return denied;
   const { id } = await params;
   const json = await request.json().catch(() => null);
   const parsed = patchSchema.safeParse(json);

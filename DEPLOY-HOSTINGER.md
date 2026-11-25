@@ -59,7 +59,14 @@ Admin user siap: admin@watchyoung.local
 
 - Buka domain sementara dari Hostinger pakai **https://**
 - Login: `admin@watchyoung.local` + password dari `ADMIN_INITIAL_PASSWORD`
-- Tambah akun staff di menu **Users**
+- Tambah akun staff di menu **Users**, dan pilih **cabang**-nya (Ruko Golden 8 / Hampton). Staff hanya bisa melihat data cabangnya; Master melihat semua cabang.
+
+## 5a. Multi cabang (sekali saja, setelah deploy fitur cabang)
+
+- Tabel `Branch` dan kolom cabang dibuat **otomatis** oleh build (`prisma migrate deploy`). Semua data lama masuk ke Ruko Golden 8.
+- **Jangan** menjalankan file `prisma/migrations/.../migration.sql` manual di phpMyAdmin. Kalau dijalankan dua kali, deploy berikutnya gagal.
+- Opsional: isi alamat & no. HP cabang untuk header invoice lewat `sql/setup-cabang.sql` (phpMyAdmin → tab SQL).
+- Nomor order: Golden 8 melanjutkan `WY-xxxx` / `INV-xxxx`, Hampton mulai `WYH-0001` / `INVH-0001`.
 
 ## 6. Hubungkan domain sendiri (opsional)
 
@@ -87,5 +94,7 @@ Tombol **Backup Database** memakai `mysqldump`, yang belum tentu tersedia di Nod
 | `P1001: Can't reach database server` | Host/port salah | `127.0.0.1:3306` |
 | Tidak bisa login / terus kembali ke halaman login | `AUTH_SECRET` kosong, atau dibuka lewat `http://` | Isi `AUTH_SECRET`, buka lewat `https://` |
 | Foto/invoice hilang setelah push baru | `UPLOAD_DIR` belum diisi | Langkah 2, lalu upload ulang file lama (langkah 7.3) |
+| `P3009` / `migrate found failed migrations` | Ada migrasi gagal yang tercatat di `_prisma_migrations` | Perbaiki baris yang gagal di phpMyAdmin dulu, baru deploy ulang |
+| Staff tidak bisa login: "belum diberi cabang" | Akun Staff tanpa cabang | Menu Staff → **Role & Cabang** |
 
 Log aplikasi saat berjalan: Dashboard → **Runtime Logs**. Restart: klik badge **Running** → **Restart**.

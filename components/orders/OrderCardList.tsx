@@ -14,6 +14,7 @@ export type OrderCardItem = {
   status: OrderStatus;
   createdAt: Date;
   customer?: { name: string };
+  branch?: { id: string; name: string };
 };
 
 /**
@@ -25,11 +26,13 @@ export function OrderCardList({
   orders,
   emptyLabel,
   showCustomer = true,
+  showBranch = false,
   className,
 }: {
   orders: OrderCardItem[];
   emptyLabel: string;
   showCustomer?: boolean;
+  showBranch?: boolean;
   className?: string;
 }) {
   if (orders.length === 0) {
@@ -57,6 +60,7 @@ export function OrderCardList({
               </div>
               <p className="truncate text-xs text-muted-foreground">
                 <span className="font-mono">{order.orderNumber}</span>
+                {showBranch && order.branch ? ` · ${order.branch.name}` : ""}
                 {showCustomer && order.customer ? ` · ${order.customer.name}` : ""}
                 {` · ${formatShortDate(order.createdAt)}`}
               </p>

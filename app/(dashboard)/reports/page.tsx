@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireMasterPage } from "@/lib/auth";
+import { branchLabel, filterWhere, requireScopePage } from "@/lib/branch";
+import { BranchBadge } from "@/components/shared/BranchBadge";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { MonthlyRevenueChart } from "@/components/reports/MonthlyRevenueChart";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -46,8 +48,12 @@ function monthDate(key: string) {
 
 export default async function ReportsPage() {
   await requireMasterPage();
+  const scope = await requireScopePage();
+  const allBranches = scope.filterBranchId === null;
 
+  // Ikut pilihan cabang di sidebar; "Semua cabang" menambah rincian per cabang.
   const invoices = await prisma.invoice.findMany({
+    where: filterWhere(scope),
     include: {
       orders: { include: { customer: true }, orderBy: { createdAt: "asc" } },
       items: true,
@@ -129,11 +135,20 @@ export default async function ReportsPage() {
   const serviceRevenueTotal = serviceBreakdown.reduce((sum, row) => sum + row.revenue, 0);
   const thisMonthCount = bucketByKey.get(thisMonthKey)?.count ?? 0;
 
+  const branchBreakdown = scope.branches.map((branch) => {
+    const branchInvoices = invoices.filter((inv) => inv.branchId === branch.id);
+    const revenue = branchInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const monthRevenue = branchInvoices
+      .filter((inv) => monthKey(inv.createdAt) === thisMonthKey)
+      .reduce((sum, inv) => sum + inv.amount, 0);
+    return { branch, count: branchInvoices.length, revenue, monthRevenue };
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Laporan"
-        description="Ringkasan pendapatan dari invoice yang sudah diterbitkan."
+        description={`${branchLabel(scope.branch)} · ringkasan pendapatan dari invoice yang sudah diterbitkan.`}
         actions={
           <Button variant="outline" render={<a href="/api/reports/export" />} nativeButton={false}>
             <Download />
@@ -172,6 +187,51 @@ export default async function ReportsPage() {
           hint="Nilai rata-rata"
         />
       </div>
+
+      {allBranches && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Per Cabang</CardTitle>
+            <CardDescription>Pilih cabang di sidebar untuk melihat laporan satu cabang saja.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
+            {branchBreakdown.map((row) => {
+              const share = totalRevenue > 0 ? (row.revenue / totalRevenue) * 100 : 0;
+              return (
+                <div key={row.branch.id} className="space-y-2.5 rounded-xl border p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <BranchBadge branch={row.branch} />
+                    <p className="text-xs font-medium text-muted-foreground tabular-nums">
+                      {Math.round(share)}% pendapatan
+                    </p>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${share}%` }} />
+                  </div>
+                  <dl className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <dt className="text-muted-foreground">Invoice</dt>
+                      <dd className="font-semibold tabular-nums">{row.count}</dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-muted-foreground">Total</dt>
+                      <dd className="font-semibold break-words tabular-nums">
+                        {formatRupiah(row.revenue)}
+                      </dd>
+                    </div>
+                    <div className="min-w-0">
+                      <dt className="text-muted-foreground">Bulan ini</dt>
+                      <dd className="font-semibold break-words tabular-nums">
+                        {formatRupiah(row.monthRevenue)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">

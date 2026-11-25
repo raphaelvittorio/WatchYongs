@@ -9,7 +9,7 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 
-import { WatchLogo } from "@/lib/pdf-logo";
+import { WatchLogo, branchContactLine, type PdfBranch } from "@/lib/pdf-logo";
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 11, fontFamily: "Helvetica", color: "#1a1a1a" },
@@ -68,6 +68,7 @@ function formatRupiah(amount: number) {
 }
 
 export type InvoicePdfData = {
+  branch: PdfBranch;
   invoiceNumber: string;
   createdAt: Date;
   amount: number;
@@ -98,7 +99,10 @@ function InvoiceDocument({ data }: { data: InvoicePdfData }) {
             </View>
             <View>
               <Text style={styles.shopName}>WatchYongs</Text>
-              <Text style={styles.muted}>Jasa Reparasi Jam Tangan</Text>
+              <Text style={styles.muted}>Jasa Reparasi Jam Tangan · Cabang {data.branch.name}</Text>
+              {branchContactLine(data.branch) && (
+                <Text style={styles.muted}>{branchContactLine(data.branch)}</Text>
+              )}
             </View>
           </View>
           <View>

@@ -3,13 +3,15 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { denyUnlessMaster, getCurrentUser, hashPassword } from "@/lib/auth";
 import { Role } from "@/lib/roles";
+import { resolveUserBranch } from "@/lib/branch";
 
 const patchSchema = z
   .object({
     password: z.string().min(8, "Password minimal 8 karakter.").optional(),
     role: z.enum([Role.MASTER, Role.STAFF]).optional(),
+    branchId: z.string().optional(),
   })
-  .refine((data) => data.password !== undefined || data.role !== undefined, {
+  .refine((data) => data.password !== undefined || data.role !== undefined || data.branchId !== undefined, {
     message: "Tidak ada perubahan yang dikirim.",
   });
 
@@ -35,7 +37,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Staff tidak ditemukan." }, { status: 404 });
   }
 
-  const { password, role } = parsed.data;
+  const { password, role, branchId } = parsed.data;
 
   // Master tidak bisa menurunkan role-nya sendiri. Karena yang mengubah role
   // selalu master, aturan ini juga menjamin selalu ada minimal 1 master.
@@ -47,11 +49,23 @@ export async function PATCH(
     );
   }
 
+  // Role atau cabang berubah → cek ulang pasangan role + cabang. Jadi Master
+  // berarti cabangnya dikosongkan; Staff wajib punya cabang.
+  let branchUpdate: { branchId: string | null } | undefined;
+  if (role !== undefined || branchId !== undefined) {
+    const result = await resolveUserBranch(role ?? existing.role, branchId ?? existing.branchId);
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+    branchUpdate = result;
+  }
+
   await prisma.user.update({
     where: { id },
     data: {
       ...(password !== undefined && { passwordHash: await hashPassword(password) }),
       ...(role !== undefined && { role }),
+      ...branchUpdate,
     },
   });
 

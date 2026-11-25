@@ -67,12 +67,14 @@ export const getCurrentUser = cache(async () => {
     // menunggu sesi lama kedaluwarsa.
     return await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, branchId: true },
     });
   } catch {
     return null;
   }
 });
+
+export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
 /**
  * Untuk API route khusus master. Mengembalikan response error (401/403)

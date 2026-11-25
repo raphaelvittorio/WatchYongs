@@ -3,8 +3,16 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { denyUnlessMaster, hashPassword } from "@/lib/auth";
 import { Role } from "@/lib/roles";
+import { resolveUserBranch } from "@/lib/branch";
 
-const userSelect = { id: true, name: true, email: true, role: true, createdAt: true } as const;
+const userSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  branchId: true,
+  createdAt: true,
+} as const;
 
 export async function GET() {
   const denied = await denyUnlessMaster();
@@ -22,6 +30,7 @@ const createSchema = z.object({
   email: z.string().email("Format email tidak valid."),
   password: z.string().min(8, "Password minimal 8 karakter."),
   role: z.enum([Role.MASTER, Role.STAFF]).default("STAFF"),
+  branchId: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -38,6 +47,10 @@ export async function POST(request: NextRequest) {
   }
 
   const { name, email, password, role } = parsed.data;
+  const branch = await resolveUserBranch(role, parsed.data.branchId);
+  if ("error" in branch) {
+    return NextResponse.json({ error: branch.error }, { status: 400 });
+  }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -46,7 +59,7 @@ export async function POST(request: NextRequest) {
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash, role },
+    data: { name, email, passwordHash, role, branchId: branch.branchId },
     select: userSelect,
   });
 

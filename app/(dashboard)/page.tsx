@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { branchLabel, filterWhere, requireScopePage } from "@/lib/branch";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { AlertList, type AlertItem } from "@/components/dashboard/AlertList";
 import { PickupReminders } from "@/components/dashboard/PickupReminders";
@@ -43,38 +43,59 @@ const STAT_CARDS: { status: OrderStatus; icon: typeof ClipboardList; hint: strin
 ];
 
 export default async function DashboardPage() {
+  const scope = await requireScopePage();
+  const { user } = scope;
+  const branchWhere = filterWhere(scope);
+  // Master yang melihat semua cabang: tampilkan rincian per cabang.
+  const allBranches = scope.filterBranchId === null;
+
   const onProcessThreshold = daysAgo(ONPROCESS_ALERT_DAYS);
   const completedThreshold = daysAgo(COMPLETED_ALERT_DAYS);
 
-  const [user, statusCounts, onProcessOverdue, completedOverdue, recentOrders] =
-    await Promise.all([
-      getCurrentUser(),
-      prisma.repairOrder.groupBy({ by: ["status"], _count: { _all: true } }),
-      prisma.repairOrder.findMany({
-        where: { status: "ONPROCESS", statusChangedAt: { lte: onProcessThreshold } },
-        include: { customer: true },
-        orderBy: { statusChangedAt: "asc" },
-      }),
-      prisma.repairOrder.findMany({
-        where: { status: "COMPLETED", statusChangedAt: { lte: completedThreshold } },
-        include: { customer: true },
-        orderBy: { statusChangedAt: "asc" },
-      }),
-      prisma.repairOrder.findMany({
-        include: { customer: true },
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      }),
-    ]);
+  const [statusCounts, onProcessOverdue, completedOverdue, recentOrders] = await Promise.all([
+    prisma.repairOrder.groupBy({
+      by: ["status", "branchId"],
+      where: branchWhere,
+      _count: { _all: true },
+    }),
+    prisma.repairOrder.findMany({
+      where: { ...branchWhere, status: "ONPROCESS", statusChangedAt: { lte: onProcessThreshold } },
+      include: { customer: true, branch: true },
+      orderBy: { statusChangedAt: "asc" },
+    }),
+    prisma.repairOrder.findMany({
+      where: { ...branchWhere, status: "COMPLETED", statusChangedAt: { lte: completedThreshold } },
+      include: { customer: true, branch: true },
+      orderBy: { statusChangedAt: "asc" },
+    }),
+    prisma.repairOrder.findMany({
+      where: branchWhere,
+      include: { customer: true, branch: true },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+  ]);
 
-  const countFor = (status: OrderStatus) =>
-    statusCounts.find((s) => s.status === status)?._count._all ?? 0;
+  const countFor = (status: OrderStatus, branchId?: string) =>
+    statusCounts
+      .filter((s) => s.status === status && (!branchId || s.branchId === branchId))
+      .reduce((sum, s) => sum + s._count._all, 0);
+  // Satu baris per cabang supaya tidak terpotong di kartu yang sempit.
+  const branchBreakdown = (status: OrderStatus) => (
+    <span className="block">
+      {scope.branches.map((b) => (
+        <span key={b.id} className="block truncate">
+          {b.name}: <span className="font-semibold text-foreground tabular-nums">{countFor(status, b.id)}</span>
+        </span>
+      ))}
+    </span>
+  );
 
   const alerts: AlertItem[] = [
     ...onProcessOverdue.map((order) => ({
       id: order.id,
       href: `/orders/${order.id}`,
-      title: `${order.orderNumber} · ${order.watchBrand} (${order.customer.name})`,
+      title: `${order.orderNumber} · ${order.watchBrand} (${order.customer.name})${allBranches ? ` · ${order.branch.name}` : ""}`,
       description: `Sudah ${daysSince(order.statusChangedAt)} hari di On Process. Perlu action?`,
       tone: "warning" as const,
       kind: "process" as const,
@@ -85,7 +106,7 @@ export default async function DashboardPage() {
       return {
         id: order.id,
         href: `/orders/${order.id}`,
-        title: `${order.orderNumber} · ${order.watchBrand} (${order.customer.name})`,
+        title: `${order.orderNumber} · ${order.watchBrand} (${order.customer.name})${allBranches ? ` · ${order.branch.name}` : ""}`,
         description: isStorageFee
           ? `Sudah selesai ${overdueDays} hari (>3 minggu) — kena biaya penyimpanan.`
           : `Sudah selesai ${overdueDays} hari, belum diambil.`,
@@ -97,12 +118,12 @@ export default async function DashboardPage() {
 
   const activeCount =
     countFor("INTAKE") + countFor("ASSESSMENT") + countFor("ONPROCESS") + countFor("COMPLETED");
-  const firstName = user?.name.split(" ")[0] ?? "Tim";
+  const firstName = user.name.split(" ")[0] || "Tim";
 
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
-        eyebrow={formatWeekdayDate(new Date())}
+        eyebrow={`${formatWeekdayDate(new Date())} · ${branchLabel(scope.branch)}`}
         title={`Halo, ${firstName}`}
         description={
           <>
@@ -132,7 +153,13 @@ export default async function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-6">
+      {/* Rincian per cabang butuh kartu lebih lebar: 3 kolom, bukan 6. */}
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4",
+          allBranches ? "xl:grid-cols-3" : "xl:grid-cols-6",
+        )}
+      >
         {STAT_CARDS.map((card) => (
           <StatCard
             key={card.status}
@@ -140,7 +167,7 @@ export default async function DashboardPage() {
             value={countFor(card.status)}
             icon={card.icon}
             tone={STATUS_TONE[card.status]}
-            hint={card.hint}
+            hint={allBranches ? branchBreakdown(card.status) : card.hint}
             href={`/orders?status=${card.status}`}
           />
         ))}
@@ -168,9 +195,14 @@ export default async function DashboardPage() {
               </Button>
             </CardAction>
           </CardHeader>
-          <OrderCardList className="md:hidden" orders={recentOrders} emptyLabel="Belum ada order." />
+          <OrderCardList
+            className="md:hidden"
+            orders={recentOrders}
+            showBranch={allBranches}
+            emptyLabel="Belum ada order."
+          />
           <div className="hidden md:block">
-            <OrderTable orders={recentOrders} emptyLabel="Belum ada order." />
+            <OrderTable orders={recentOrders} showBranch={allBranches} emptyLabel="Belum ada order." />
           </div>
         </Card>
       </div>

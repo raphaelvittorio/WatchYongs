@@ -1,5 +1,6 @@
 import { UserCog } from "lucide-react";
 import { requireMasterPage } from "@/lib/auth";
+import { getBranches } from "@/lib/branch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateUserForm } from "@/components/users/CreateUserForm";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -8,6 +9,7 @@ export const metadata = { title: "Staff Baru" };
 
 export default async function NewUserPage() {
   await requireMasterPage();
+  const branches = (await getBranches()).map((b) => ({ id: b.id, name: b.name }));
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -29,7 +31,7 @@ export default async function NewUserPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <CreateUserForm />
+          <CreateUserForm branches={branches} />
         </CardContent>
       </Card>
     </div>

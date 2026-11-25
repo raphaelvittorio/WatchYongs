@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Download, Plus, Search, X } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { branchLabel, filterWhere, requireScopePage } from "@/lib/branch";
 import { isMaster } from "@/lib/roles";
 import { OrderCardList } from "@/components/orders/OrderCardList";
 import { OrderTable } from "@/components/orders/OrderTable";
@@ -29,29 +29,35 @@ export default async function OrdersPage({
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   const { status, q, page: pageParam } = await searchParams;
-  const user = await getCurrentUser();
+  const scope = await requireScopePage();
+  const { user } = scope;
+  const allBranches = scope.filterBranchId === null;
   const validStatus =
     status && Object.values(OrderStatus).includes(status as OrderStatusType)
       ? (status as OrderStatusType)
       : undefined;
   const page = Math.max(1, Number(pageParam) || 1);
 
-  const searchWhere = q
-    ? {
-        OR: [
-          { orderNumber: { contains: q } },
-          { watchBrand: { contains: q } },
-          { customer: { name: { contains: q } } },
-        ],
-      }
-    : {};
+  // Cabang ikut masuk ke searchWhere supaya angka di tab status juga per cabang.
+  const searchWhere = {
+    ...filterWhere(scope),
+    ...(q
+      ? {
+          OR: [
+            { orderNumber: { contains: q } },
+            { watchBrand: { contains: q } },
+            { customer: { name: { contains: q } } },
+          ],
+        }
+      : {}),
+  };
 
   const where = { status: validStatus, ...searchWhere };
 
   const [orders, total, statusCounts] = await Promise.all([
     prisma.repairOrder.findMany({
       where,
-      include: { customer: true },
+      include: { customer: true, branch: true },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -97,7 +103,7 @@ export default async function OrdersPage({
     <div className="space-y-6">
       <PageHeader
         title="Order Reparasi"
-        description={`${total} order${validStatus ? ` · ${STATUS_LABELS[validStatus]}` : ""}${q ? ` · cocok dengan "${q}"` : ""}`}
+        description={`${branchLabel(scope.branch)} · ${total} order${validStatus ? ` · ${STATUS_LABELS[validStatus]}` : ""}${q ? ` · cocok dengan "${q}"` : ""}`}
         actions={
           <>
             {isMaster(user) && (
@@ -182,10 +188,11 @@ export default async function OrdersPage({
         <OrderCardList
           className="md:hidden"
           orders={orders}
+          showBranch={allBranches}
           emptyLabel="Tidak ada order yang cocok."
         />
         <div className="hidden md:block">
-          <OrderTable orders={orders} emptyLabel="Tidak ada order yang cocok." />
+          <OrderTable orders={orders} showBranch={allBranches} emptyLabel="Tidak ada order yang cocok." />
         </div>
 
         {total > 0 && (

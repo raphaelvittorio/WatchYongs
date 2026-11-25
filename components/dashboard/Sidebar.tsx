@@ -20,6 +20,7 @@ import { BrandLogo, BrandMark } from "@/components/shared/BrandLogo";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, isMaster, type Role } from "@/lib/roles";
+import { BranchSwitcher, type BranchOption } from "@/components/dashboard/BranchSwitcher";
 
 type NavItem = { href: string; label: string; short: string; icon: LucideIcon };
 
@@ -59,6 +60,13 @@ function isActive(pathname: string, href: string) {
 
 type User = { name: string; email: string; role: Role };
 
+export type BranchContext = {
+  branches: BranchOption[];
+  /** Cabang yang sedang ditampilkan; null = semua cabang (master). */
+  current: BranchOption | null;
+  canSwitch: boolean;
+};
+
 /**
  * Isi sidebar (nav + footer user) dipakai bersama oleh sidebar desktop dan
  * drawer mobile, supaya menunya tidak perlu ditulis dua kali.
@@ -66,18 +74,23 @@ type User = { name: string; email: string; role: Role };
 function SidebarBody({
   pathname,
   user,
+  branch,
   onNavigate,
   onLogout,
 }: {
   pathname: string;
   user: User;
+  branch: BranchContext;
   onNavigate: () => void;
   onLogout: () => void;
 }) {
   const intakeActive = pathname === "/orders/new";
   return (
     <>
-      <div className="px-4 pt-2 pb-4">
+      <div className="px-4 pt-1 pb-3">
+        <BranchSwitcher branches={branch.branches} current={branch.current} canSwitch={branch.canSwitch} />
+      </div>
+      <div className="px-4 pb-4">
         <Link
           href="/orders/new"
           onClick={onNavigate}
@@ -134,7 +147,7 @@ function SidebarBody({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-white">{user.name}</p>
             <p className="truncate text-xs text-sidebar-muted">
-              {ROLE_LABELS[user.role]} · {user.email}
+              {ROLE_LABELS[user.role]} · {branch.canSwitch ? user.email : branch.current?.name}
             </p>
           </div>
           <button
@@ -152,7 +165,7 @@ function SidebarBody({
   );
 }
 
-export function Sidebar({ user }: { user: User }) {
+export function Sidebar({ user, branch }: { user: User; branch: BranchContext }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -217,11 +230,14 @@ export function Sidebar({ user }: { user: User }) {
         {currentNav && currentNav.href !== "/" && (
           <span className="truncate text-sm text-muted-foreground">/ {currentNav.label}</span>
         )}
+        <span className="ml-auto max-w-[40%] truncate rounded-full bg-brand-soft px-2.5 py-1 text-[11px] font-semibold text-brand-foreground">
+          {branch.current?.name ?? "Semua cabang"}
+        </span>
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Buka menu akun"
-          className="ml-auto rounded-full ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-full ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
         >
           <UserAvatar name={user.name} size="sm" />
         </button>
@@ -297,6 +313,7 @@ export function Sidebar({ user }: { user: User }) {
         <SidebarBody
           pathname={pathname}
           user={user}
+          branch={branch}
           onNavigate={() => setOpen(false)}
           onLogout={handleLogout}
         />
@@ -312,6 +329,7 @@ export function Sidebar({ user }: { user: User }) {
         <SidebarBody
           pathname={pathname}
           user={user}
+          branch={branch}
           onNavigate={() => {}}
           onLogout={handleLogout}
         />

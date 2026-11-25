@@ -13,6 +13,7 @@ type OverdueOrder = {
   status: OrderStatus;
   statusChangedAt: Date;
   customer: { name: string; phone: string };
+  branch?: { name: string };
 };
 
 export function PickupReminders({ orders }: { orders: OverdueOrder[] }) {

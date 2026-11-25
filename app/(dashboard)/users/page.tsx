@@ -3,6 +3,8 @@ import { DatabaseBackup, Download, Plus, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireMasterPage } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/roles";
+import { getBranches } from "@/lib/branch";
+import { BranchBadge } from "@/components/shared/BranchBadge";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { UserAvatar } from "@/components/shared/UserAvatar";
@@ -15,10 +17,21 @@ export const metadata = { title: "Staff" };
 
 export default async function UsersPage() {
   const currentUser = await requireMasterPage();
-  const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const [users, branchRows] = await Promise.all([
+    prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        branch: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    getBranches(),
+  ]);
+  const branches = branchRows.map((b) => ({ id: b.id, name: b.name }));
 
   const isLastUser = users.length <= 1;
 
@@ -26,7 +39,7 @@ export default async function UsersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Staff"
-        description={`${users.length} akun bisa login ke dashboard. Master punya akses penuh; Staff hanya bagian operasional.`}
+        description={`${users.length} akun bisa login ke dashboard. Master punya akses penuh ke semua cabang; Staff hanya operasional di cabangnya.`}
         actions={
           <Button render={<Link href="/users/new" />} nativeButton={false}>
             <Plus />
@@ -55,6 +68,12 @@ export default async function UsersPage() {
                     >
                       {ROLE_LABELS[user.role]}
                     </span>
+                    {user.branch && <BranchBadge branch={user.branch} />}
+                    {user.role === "MASTER" && (
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        Semua cabang
+                      </span>
+                    )}
                     {isSelf && (
                       <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand-foreground">
                         Kamu
@@ -72,6 +91,8 @@ export default async function UsersPage() {
                   userId={user.id}
                   userName={user.name}
                   role={user.role}
+                  branchId={user.branch?.id ?? null}
+                  branches={branches}
                   isSelf={isSelf}
                   isLastUser={isLastUser}
                 />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/order-number";
+import { branchForCreate, filterWhere, requireScopeApi } from "@/lib/branch";
 import { OrderStatus, ServiceType } from "@/lib/status";
 import {
   extractPhotoFiles,
@@ -15,6 +16,8 @@ const VALID_STATUSES = new Set(Object.values(OrderStatus));
 const VALID_SERVICE_TYPES = new Set(Object.values(ServiceType));
 
 export async function GET(request: NextRequest) {
+  const { scope, denied } = await requireScopeApi();
+  if (denied) return denied;
   const { searchParams } = request.nextUrl;
   const statusParam = searchParams.get("status");
   const q = searchParams.get("q")?.trim();
@@ -25,6 +28,7 @@ export async function GET(request: NextRequest) {
 
   const orders = await prisma.repairOrder.findMany({
     where: {
+      ...filterWhere(scope),
       status,
       ...(q
         ? {
@@ -44,7 +48,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { scope, denied } = await requireScopeApi();
+  if (denied) return denied;
   const formData = await request.formData();
+
+  // Staff: selalu cabangnya sendiri. Master: wajib memilih cabang di form.
+  const branch = branchForCreate(scope, formData.get("branchId")?.toString());
+  if (!branch) {
+    return NextResponse.json({ error: "Pilih cabang untuk order ini." }, { status: 400 });
+  }
 
   const watchBrand = formData.get("watchBrand")?.toString().trim();
   const watchModel = formData.get("watchModel")?.toString().trim() || null;
@@ -97,6 +109,7 @@ export async function POST(request: NextRequest) {
         data: {
           name: customerName!,
           phone: customerPhone!,
+          branchId: branch.id,
           ownerAge,
           ownerCharacter,
         },
@@ -106,10 +119,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Customer tidak ditemukan." }, { status: 400 });
   }
 
-  const orderNumber = await generateOrderNumber();
+  const orderNumber = await generateOrderNumber(branch);
   const order = await prisma.repairOrder.create({
     data: {
       orderNumber,
+      branchId: branch.id,
       customerId: customer.id,
       watchBrand,
       watchModel,

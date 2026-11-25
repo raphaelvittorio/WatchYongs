@@ -9,8 +9,8 @@ export const ROLE_LABELS: Record<RoleType, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<RoleType, string> = {
-  MASTER: "Akses penuh: laporan, export, backup, kelola staff, hapus data.",
-  STAFF: "Operasional saja: order, customer, foto, dan WhatsApp.",
+  MASTER: "Akses penuh semua cabang: laporan, export, backup, kelola staff, hapus data.",
+  STAFF: "Operasional di cabangnya saja: order, customer, foto, dan WhatsApp.",
 };
 
 export function isMaster(user: { role: RoleType } | null | undefined) {

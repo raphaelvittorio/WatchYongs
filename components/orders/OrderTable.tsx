@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { UserAvatar } from "@/components/shared/UserAvatar";
+import { BranchBadge } from "@/components/shared/BranchBadge";
 import {
   Table,
   TableBody,
@@ -23,18 +24,23 @@ export type OrderTableRow = {
   statusChangedAt: Date;
   createdAt: Date;
   customer?: { name: string; phone: string };
+  branch?: { id: string; name: string };
 };
 
 /** Tabel order versi desktop. Seluruh baris bisa diklik (stretched link). */
 export function OrderTable({
   orders,
   showCustomer = true,
+  showBranch = false,
   emptyLabel,
 }: {
   orders: OrderTableRow[];
   showCustomer?: boolean;
+  /** Kolom cabang — untuk master yang sedang melihat semua cabang. */
+  showBranch?: boolean;
   emptyLabel: string;
 }) {
+  const columnCount = 4 + (showCustomer ? 1 : 0) + (showBranch ? 1 : 0);
   return (
     <Table>
       <TableHeader>
@@ -42,6 +48,7 @@ export function OrderTable({
           <TableHead>Order</TableHead>
           {showCustomer && <TableHead>Customer</TableHead>}
           <TableHead>Jam</TableHead>
+          {showBranch && <TableHead>Cabang</TableHead>}
           <TableHead>Status</TableHead>
           <TableHead className="w-10">
             <span className="sr-only">Buka</span>
@@ -52,7 +59,7 @@ export function OrderTable({
         {orders.length === 0 && (
           <TableRow className="hover:bg-transparent">
             <TableCell
-              colSpan={showCustomer ? 5 : 4}
+              colSpan={columnCount}
               className="py-10 text-center text-muted-foreground"
             >
               {emptyLabel}
@@ -92,6 +99,9 @@ export function OrderTable({
                 {order.serviceType ? SERVICE_TYPE_LABELS[order.serviceType] : "—"}
               </p>
             </TableCell>
+            {showBranch && (
+              <TableCell>{order.branch && <BranchBadge branch={order.branch} />}</TableCell>
+            )}
             <TableCell>
               <StatusBadge status={order.status} />
               <p className="mt-1 text-xs text-muted-foreground">

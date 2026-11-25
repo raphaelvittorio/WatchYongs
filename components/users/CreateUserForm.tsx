@@ -9,31 +9,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RoleSelect } from "@/components/users/RoleSelect";
+import { BranchField } from "@/components/branches/BranchField";
 import { Role } from "@/lib/roles";
 
-const schema = z.object({
-  name: z.string().min(1, "Nama wajib diisi."),
-  email: z.string().email("Format email tidak valid."),
-  password: z.string().min(8, "Password minimal 8 karakter."),
-  role: z.enum([Role.MASTER, Role.STAFF]),
-});
+const schema = z
+  .object({
+    name: z.string().min(1, "Nama wajib diisi."),
+    email: z.string().email("Format email tidak valid."),
+    password: z.string().min(8, "Password minimal 8 karakter."),
+    role: z.enum([Role.MASTER, Role.STAFF]),
+    branchId: z.string().optional(),
+  })
+  .refine((v) => v.role === Role.MASTER || Boolean(v.branchId), {
+    message: "Pilih cabang untuk akun staff.",
+    path: ["branchId"],
+  });
 
 type FormValues = z.infer<typeof schema>;
 
-export function CreateUserForm() {
+export function CreateUserForm({ branches }: { branches: { id: string; name: string }[] }) {
   const router = useRouter();
   const {
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { role: "STAFF" } });
+  const isStaff = watch("role") === Role.STAFF;
 
   async function onSubmit(values: FormValues) {
     const res = await fetch("/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+      // Master tidak punya cabang: jangan kirim pilihan cabang yang tersisa.
+      body: JSON.stringify({ ...values, branchId: isStaff ? values.branchId : undefined }),
     });
 
     if (!res.ok) {
@@ -75,6 +85,22 @@ export function CreateUserForm() {
           render={({ field }) => <RoleSelect value={field.value} onChange={field.onChange} />}
         />
       </div>
+      {isStaff && (
+        <Controller
+          control={control}
+          name="branchId"
+          render={({ field }) => (
+            <BranchField
+              id="user-branch"
+              options={{ branches, defaultBranchId: null, locked: false }}
+              value={field.value ?? ""}
+              onChange={field.onChange}
+              error={errors.branchId?.message}
+              hint="Staff hanya bisa melihat dan mengubah data cabang ini."
+            />
+          )}
+        />
+      )}
       <Button type="submit" disabled={isSubmitting} className="w-full">
         {isSubmitting ? "Menyimpan..." : "Buat Akun"}
       </Button>

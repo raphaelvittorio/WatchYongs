@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { BranchField, type BranchFieldOptions } from "@/components/branches/BranchField";
 
 const schema = z.object({
   name: z.string().min(1, "Nama wajib diisi."),
@@ -32,12 +34,17 @@ export type CustomerRecord = {
 
 export function CustomerForm({
   customer,
+  branchOptions,
   onSuccess,
 }: {
   customer?: CustomerRecord;
+  /** Hanya untuk customer baru: cabang asal. Saat edit, cabang asal tidak diubah. */
+  branchOptions?: BranchFieldOptions;
   onSuccess: (customer: CustomerRecord) => void;
 }) {
   const isEdit = Boolean(customer);
+  const [branchId, setBranchId] = useState(branchOptions?.defaultBranchId ?? "");
+  const [branchError, setBranchError] = useState<string>();
 
   const {
     register,
@@ -56,6 +63,10 @@ export function CustomerForm({
   });
 
   async function onSubmit(values: FormValues) {
+    if (!isEdit && branchOptions && !branchId) {
+      setBranchError("Pilih cabang asal customer.");
+      return;
+    }
     const res = await fetch(
       isEdit ? `/api/customers/${customer!.id}` : "/api/customers",
       {
@@ -64,6 +75,7 @@ export function CustomerForm({
         body: JSON.stringify({
           ...values,
           ownerAge: values.ownerAge ? Number(values.ownerAge) : undefined,
+          ...(!isEdit && branchOptions ? { branchId } : {}),
         }),
       },
     );
@@ -81,6 +93,20 @@ export function CustomerForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {!isEdit && branchOptions && (
+        <BranchField
+          id="customer-branch"
+          label="Cabang asal"
+          options={branchOptions}
+          value={branchId}
+          onChange={(next) => {
+            setBranchId(next);
+            setBranchError(undefined);
+          }}
+          error={branchError}
+          hint="Data customer bisa dicari dari semua cabang."
+        />
+      )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="customer-name">Nama</Label>

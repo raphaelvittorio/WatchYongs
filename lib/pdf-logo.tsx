@@ -50,3 +50,12 @@ export function WatchLogo({ size = 40 }: { size?: number }) {
     </View>
   );
 }
+
+/** Identitas cabang yang dicetak di header PDF (invoice & tanda terima). */
+export type PdfBranch = { name: string; address: string | null; phone: string | null };
+
+/** "Alamat · No. HP", atau null kalau keduanya belum diisi. */
+export function branchContactLine(branch: PdfBranch) {
+  const parts = [branch.address, branch.phone].filter((part): part is string => Boolean(part?.trim()));
+  return parts.length > 0 ? parts.join(" · ") : null;
+}

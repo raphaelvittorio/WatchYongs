@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { OrderStatus, AssessmentDecision } from "@/lib/status";
+import { requireScopeApi, scopedOrderWhere } from "@/lib/branch";
 
 const bodySchema = z.object({
   decision: z.enum([AssessmentDecision.APPROVED, AssessmentDecision.REJECTED]),
@@ -12,14 +13,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: "Keputusan tidak valid." }, { status: 400 });
   }
 
-  const order = await prisma.repairOrder.findUnique({
-    where: { id },
+  const order = await prisma.repairOrder.findFirst({
+    where: scopedOrderWhere(scope, id),
     include: { assessment: true },
   });
   if (!order || !order.assessment) {

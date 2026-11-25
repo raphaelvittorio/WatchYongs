@@ -5,6 +5,7 @@ import { uploadPath } from "@/lib/uploads";
 import { prisma } from "@/lib/db";
 import { denyUnlessMaster } from "@/lib/auth";
 import { ServiceType } from "@/lib/status";
+import { requireScopeApi, scopedOrderWhere } from "@/lib/branch";
 
 export const runtime = "nodejs";
 
@@ -13,8 +14,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const order = await prisma.repairOrder.findUnique({
-    where: { id },
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
+  const order = await prisma.repairOrder.findFirst({
+    where: scopedOrderWhere(scope, id),
     include: {
       customer: true,
       photos: { orderBy: { uploadedAt: "asc" } },
@@ -44,13 +47,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
   const json = await request.json().catch(() => null);
   const parsed = patchSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: "Data order tidak valid." }, { status: 400 });
   }
 
-  const existing = await prisma.repairOrder.findUnique({ where: { id } });
+  const existing = await prisma.repairOrder.findFirst({ where: scopedOrderWhere(scope, id) });
   if (!existing) {
     return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
   }
@@ -78,8 +83,10 @@ export async function DELETE(
   if (denied) return denied;
 
   const { id } = await params;
-  const order = await prisma.repairOrder.findUnique({
-    where: { id },
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
+  const order = await prisma.repairOrder.findFirst({
+    where: scopedOrderWhere(scope, id),
     include: { invoice: true },
   });
 

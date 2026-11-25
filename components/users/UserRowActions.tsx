@@ -13,12 +13,16 @@ export function UserRowActions({
   userId,
   userName,
   role,
+  branchId,
+  branches,
   isSelf,
   isLastUser,
 }: {
   userId: string;
   userName: string;
   role: Role;
+  branchId: string | null;
+  branches: { id: string; name: string }[];
   isSelf: boolean;
   isLastUser: boolean;
 }) {
@@ -40,7 +44,15 @@ export function UserRowActions({
     <div className="flex flex-wrap gap-2 md:justify-end">
       <ResetPasswordDialog userId={userId} userName={userName} />
       {/* Role sendiri tidak bisa diubah, supaya selalu ada minimal 1 master. */}
-      {!isSelf && <ChangeRoleDialog userId={userId} userName={userName} role={role} />}
+      {!isSelf && (
+        <ChangeRoleDialog
+          userId={userId}
+          userName={userName}
+          role={role}
+          branchId={branchId}
+          branches={branches}
+        />
+      )}
       {!isSelf && !isLastUser && (
         <ConfirmDeleteDialog
           trigger={

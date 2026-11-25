@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { OrderStatus } from "@/lib/status";
 import { ensureInvoice } from "@/lib/invoice";
+import { requireScopeApi, scopedOrderWhere } from "@/lib/branch";
 
 export const runtime = "nodejs";
 
@@ -25,13 +26,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const { scope, denied: noScope } = await requireScopeApi();
+  if (noScope) return noScope;
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: "Biaya final tidak valid." }, { status: 400 });
   }
 
-  const order = await prisma.repairOrder.findUnique({ where: { id } });
+  const order = await prisma.repairOrder.findFirst({ where: scopedOrderWhere(scope, id) });
   if (!order) {
     return NextResponse.json({ error: "Order tidak ditemukan." }, { status: 404 });
   }
@@ -46,15 +49,17 @@ export async function POST(
 
   let additionalOrders: (typeof order)[] = [];
   if (additionalOrderIds && additionalOrderIds.length > 0) {
+    // Invoice gabungan hanya untuk order di cabang yang sama: order cabang
+    // lain tidak ikut terambil, sehingga jumlahnya tidak cocok dan ditolak.
     additionalOrders = await prisma.repairOrder.findMany({
-      where: { id: { in: additionalOrderIds } },
+      where: { id: { in: additionalOrderIds }, branchId: order.branchId },
     });
     const invalid = additionalOrders.some(
       (o) => o.status !== OrderStatus.ONPROCESS || o.customerId !== order.customerId,
     );
     if (invalid || additionalOrders.length !== additionalOrderIds.length) {
       return NextResponse.json(
-        { error: "Order tambahan tidak valid — harus milik customer yang sama dan masih On Process." },
+        { error: "Order tambahan tidak valid — harus milik customer yang sama, di cabang yang sama, dan masih On Process." },
         { status: 400 },
       );
     }
@@ -99,6 +104,6 @@ export async function POST(
     { items, note },
   );
 
-  const updated = await prisma.repairOrder.findUnique({ where: { id } });
+  const updated = await prisma.repairOrder.findFirst({ where: scopedOrderWhere(scope, id) });
   return NextResponse.json(updated);
 }

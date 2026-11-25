@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { requireScopePage, scopedOrderWhere } from "@/lib/branch";
 import { PrintButton } from "@/components/orders/PrintButton";
 import { Button } from "@/components/ui/button";
 import { BrandMark } from "@/components/shared/BrandLogo";
@@ -40,9 +41,10 @@ export default async function KartuKerjaPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const order = await prisma.repairOrder.findUnique({
-    where: { id },
-    include: { customer: true },
+  const scope = await requireScopePage();
+  const order = await prisma.repairOrder.findFirst({
+    where: scopedOrderWhere(scope, id),
+    include: { customer: true, branch: true },
   });
 
   if (!order) {
@@ -88,7 +90,9 @@ export default async function KartuKerjaPage({
             <BrandMark className="size-11 text-black" />
             <div>
               <p className="text-lg leading-tight font-bold">WatchYongs</p>
-              <p className="text-xs text-neutral-500">Kartu Kerja Reparasi Jam</p>
+              <p className="text-xs text-neutral-500">
+                Kartu Kerja Reparasi Jam · Cabang {order.branch.name}
+              </p>
             </div>
           </div>
           <div className="text-right">

@@ -21,13 +21,34 @@ enum Role {
   STAFF
 }
 
+// Cabang toko. id sengaja string tetap ("golden8", "hampton") supaya mudah
+// dibaca di SQL. Prefix menentukan format nomor order/invoice cabang itu.
+model Branch {
+  id            String        @id
+  name          String
+  orderPrefix   String        @unique
+  invoicePrefix String        @unique
+  address       String?
+  phone         String?
+  createdAt     DateTime      @default(now())
+  users         User[]
+  customers     Customer[]
+  orders        RepairOrder[]
+  invoices      Invoice[]
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
   passwordHash String
   role         Role     @default(STAFF)
+  // Wajib untuk STAFF (dicek di API), selalu null untuk MASTER.
+  branchId     String?
+  branch       Branch?  @relation(fields: [branchId], references: [id])
   createdAt    DateTime @default(now())
+
+  @@index([branchId])
 }
 
 model Customer {
@@ -38,8 +59,14 @@ model Customer {
   address        String?
   ownerAge       Int?
   ownerCharacter String?
+  // Cabang asal: tempat customer pertama kali didaftarkan. Data customer
+  // dipakai bersama semua cabang; ini hanya menentukan daftar default.
+  branchId       String
+  branch         Branch        @relation(fields: [branchId], references: [id])
   createdAt      DateTime      @default(now())
   orders         RepairOrder[]
+
+  @@index([branchId])
 }
 
 enum OrderStatus {
@@ -59,6 +86,8 @@ enum ServiceType {
 model RepairOrder {
   id              String          @id @default(cuid())
   orderNumber     String          @unique
+  branchId        String
+  branch          Branch          @relation(fields: [branchId], references: [id])
   customerId      String
   customer        Customer        @relation(fields: [customerId], references: [id])
   watchBrand      String
@@ -77,6 +106,8 @@ model RepairOrder {
   invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
   invoiceItems    InvoiceItem[]
   whatsappLogs    WhatsappLog[]
+
+  @@index([branchId])
 }
 
 enum PhotoStage {
@@ -124,12 +155,16 @@ model Assessment {
 model Invoice {
   id            String        @id @default(cuid())
   invoiceNumber String        @unique
+  branchId      String
+  branch        Branch        @relation(fields: [branchId], references: [id])
   amount        Int
   note          String?
   pdfPath       String
   createdAt     DateTime      @default(now())
   items         InvoiceItem[]
   orders        RepairOrder[]
+
+  @@index([branchId])
 }
 
 model InvoiceItem {
