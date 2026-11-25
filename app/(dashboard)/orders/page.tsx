@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Download, Plus, Search, X } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { isMaster } from "@/lib/roles";
 import { OrderCardList } from "@/components/orders/OrderCardList";
 import { OrderTable } from "@/components/orders/OrderTable";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -27,6 +29,7 @@ export default async function OrdersPage({
   searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   const { status, q, page: pageParam } = await searchParams;
+  const user = await getCurrentUser();
   const validStatus =
     status && Object.values(OrderStatus).includes(status as OrderStatusType)
       ? (status as OrderStatusType)
@@ -97,10 +100,12 @@ export default async function OrdersPage({
         description={`${total} order${validStatus ? ` · ${STATUS_LABELS[validStatus]}` : ""}${q ? ` · cocok dengan "${q}"` : ""}`}
         actions={
           <>
-            <Button variant="outline" render={<a href={exportHref} />} nativeButton={false}>
-              <Download />
-              Export CSV
-            </Button>
+            {isMaster(user) && (
+              <Button variant="outline" render={<a href={exportHref} />} nativeButton={false}>
+                <Download />
+                Export CSV
+              </Button>
+            )}
             <Button render={<Link href="/orders/new" />} nativeButton={false}>
               <Plus />
               Intake Baru

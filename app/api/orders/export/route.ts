@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { toCsv } from "@/lib/csv";
 import { OrderStatus, STATUS_LABELS, SERVICE_TYPE_LABELS, type OrderStatus as OrderStatusType } from "@/lib/status";
+import { denyUnlessMaster } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
+  const denied = await denyUnlessMaster();
+  if (denied) return denied;
   const status = request.nextUrl.searchParams.get("status") ?? undefined;
   const q = request.nextUrl.searchParams.get("q")?.trim();
   const validStatus =

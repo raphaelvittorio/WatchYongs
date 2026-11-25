@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Mail, MapPin, Phone, Plus } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { isMaster } from "@/lib/roles";
 import { OrderCardList } from "@/components/orders/OrderCardList";
 import { OrderTable } from "@/components/orders/OrderTable";
 import { EditCustomerDialog } from "@/components/customers/EditCustomerDialog";
@@ -26,6 +28,7 @@ export default async function CustomerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const user = await getCurrentUser();
   const customer = await prisma.customer.findUnique({
     where: { id },
     include: { orders: { orderBy: { createdAt: "desc" } } },
@@ -52,7 +55,7 @@ export default async function CustomerDetailPage({
         actions={
           <>
             <EditCustomerDialog customer={customer} />
-            {customer.orders.length === 0 && (
+            {customer.orders.length === 0 && isMaster(user) && (
               <DeleteCustomerButton customerId={customer.id} customerName={customer.name} />
             )}
           </>

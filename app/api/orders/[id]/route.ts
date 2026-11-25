@@ -3,6 +3,7 @@ import { z } from "zod";
 import { rm } from "node:fs/promises";
 import { uploadPath } from "@/lib/uploads";
 import { prisma } from "@/lib/db";
+import { denyUnlessMaster } from "@/lib/auth";
 import { ServiceType } from "@/lib/status";
 
 export const runtime = "nodejs";
@@ -73,6 +74,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await denyUnlessMaster();
+  if (denied) return denied;
+
   const { id } = await params;
   const order = await prisma.repairOrder.findUnique({
     where: { id },

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { DatabaseBackup, Download, Plus, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { requireMasterPage } from "@/lib/auth";
+import { ROLE_LABELS } from "@/lib/roles";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { Button } from "@/components/ui/button";
@@ -12,13 +14,11 @@ import { formatLongDate } from "@/lib/format";
 export const metadata = { title: "Staff" };
 
 export default async function UsersPage() {
-  const [users, currentUser] = await Promise.all([
-    prisma.user.findMany({
-      select: { id: true, name: true, email: true, createdAt: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    getCurrentUser(),
-  ]);
+  const currentUser = await requireMasterPage();
+  const users = await prisma.user.findMany({
+    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
+  });
 
   const isLastUser = users.length <= 1;
 
@@ -26,7 +26,7 @@ export default async function UsersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Staff"
-        description={`${users.length} akun staff bisa login ke dashboard.`}
+        description={`${users.length} akun bisa login ke dashboard. Master punya akses penuh; Staff hanya bagian operasional.`}
         actions={
           <Button render={<Link href="/users/new" />} nativeButton={false}>
             <Plus />
@@ -37,7 +37,7 @@ export default async function UsersPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {users.map((user) => {
-          const isSelf = currentUser?.id === user.id;
+          const isSelf = currentUser.id === user.id;
           return (
             <Card key={user.id} className="gap-4">
               <CardContent className="flex items-start gap-3">
@@ -45,6 +45,16 @@ export default async function UsersPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="truncate font-semibold">{user.name}</p>
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
+                        user.role === "MASTER"
+                          ? "bg-amber-50 text-amber-700 ring-amber-600/20"
+                          : "bg-muted text-muted-foreground ring-border",
+                      )}
+                    >
+                      {ROLE_LABELS[user.role]}
+                    </span>
                     {isSelf && (
                       <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand-foreground">
                         Kamu
@@ -61,6 +71,7 @@ export default async function UsersPage() {
                 <UserRowActions
                   userId={user.id}
                   userName={user.name}
+                  role={user.role}
                   isSelf={isSelf}
                   isLastUser={isLastUser}
                 />

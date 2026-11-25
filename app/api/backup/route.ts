@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { spawn } from "node:child_process";
+import { denyUnlessMaster } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,8 @@ function parseDatabaseUrl(url: string) {
 }
 
 export async function GET() {
+  const denied = await denyUnlessMaster();
+  if (denied) return denied;
   const { user, password, host, port, database } = parseDatabaseUrl(
     process.env.DATABASE_URL!,
   );

@@ -6,15 +6,19 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDeleteDialog } from "@/components/shared/ConfirmDeleteDialog";
 import { ResetPasswordDialog } from "@/components/users/ResetPasswordDialog";
+import { ChangeRoleDialog } from "@/components/users/ChangeRoleDialog";
+import type { Role } from "@/lib/roles";
 
 export function UserRowActions({
   userId,
   userName,
+  role,
   isSelf,
   isLastUser,
 }: {
   userId: string;
   userName: string;
+  role: Role;
   isSelf: boolean;
   isLastUser: boolean;
 }) {
@@ -35,6 +39,8 @@ export function UserRowActions({
   return (
     <div className="flex flex-wrap gap-2 md:justify-end">
       <ResetPasswordDialog userId={userId} userName={userName} />
+      {/* Role sendiri tidak bisa diubah, supaya selalu ada minimal 1 master. */}
+      {!isSelf && <ChangeRoleDialog userId={userId} userName={userName} role={role} />}
       {!isSelf && !isLastUser && (
         <ConfirmDeleteDialog
           trigger={

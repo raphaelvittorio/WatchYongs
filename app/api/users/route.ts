@@ -1,23 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
+import { denyUnlessMaster, hashPassword } from "@/lib/auth";
+import { Role } from "@/lib/roles";
+
+const userSelect = { id: true, name: true, email: true, role: true, createdAt: true } as const;
 
 export async function GET() {
+  const denied = await denyUnlessMaster();
+  if (denied) return denied;
+
   const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, createdAt: true },
+    select: userSelect,
     orderBy: { createdAt: "asc" },
   });
   return NextResponse.json(users);
 }
 
 const createSchema = z.object({
-  name: z.string().min(1, "Nama wajib diisi."),
+  name: z.string().trim().min(1, "Nama wajib diisi."),
   email: z.string().email("Format email tidak valid."),
   password: z.string().min(8, "Password minimal 8 karakter."),
+  role: z.enum([Role.MASTER, Role.STAFF]).default("STAFF"),
 });
 
 export async function POST(request: NextRequest) {
+  const denied = await denyUnlessMaster();
+  if (denied) return denied;
+
   const json = await request.json().catch(() => null);
   const parsed = createSchema.safeParse(json);
   if (!parsed.success) {
@@ -27,7 +37,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { name, email, password } = parsed.data;
+  const { name, email, password, role } = parsed.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -36,8 +46,8 @@ export async function POST(request: NextRequest) {
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
-    data: { name, email, passwordHash },
-    select: { id: true, name: true, email: true, createdAt: true },
+    data: { name, email, passwordHash, role },
+    select: userSelect,
   });
 
   return NextResponse.json(user, { status: 201 });

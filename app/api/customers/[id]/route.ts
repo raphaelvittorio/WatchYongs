@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { denyUnlessMaster } from "@/lib/auth";
 
 export async function GET(
   _request: Request,
@@ -59,6 +60,9 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await denyUnlessMaster();
+  if (denied) return denied;
+
   const { id } = await params;
   const customer = await prisma.customer.findUnique({
     where: { id },

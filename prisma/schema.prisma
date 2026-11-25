@@ -14,11 +14,19 @@ model Counter {
   value Int    @default(0)
 }
 
+// MASTER: akses penuh (laporan, export, backup, kelola staff, hapus data).
+// STAFF: hanya bagian operasional (order, customer, foto, WhatsApp).
+enum Role {
+  MASTER
+  STAFF
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
   passwordHash String
+  role         Role     @default(STAFF)
   createdAt    DateTime @default(now())
 }
 

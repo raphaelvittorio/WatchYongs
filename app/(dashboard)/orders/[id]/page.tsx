@@ -12,6 +12,8 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
+import { isMaster } from "@/lib/roles";
 import { StatusBadge } from "@/components/orders/StatusBadge";
 import { OrderTimeline } from "@/components/orders/OrderTimeline";
 import { OrderProgress } from "@/components/orders/OrderProgress";
@@ -67,6 +69,7 @@ export default async function OrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const user = await getCurrentUser();
   const order = await prisma.repairOrder.findUnique({
     where: { id },
     include: {
@@ -144,7 +147,7 @@ export default async function OrderDetailPage({
               <ClipboardList />
               Kartu Kerja
             </Button>
-            {!order.invoice && (
+            {!order.invoice && isMaster(user) && (
               <DeleteOrderButton orderId={order.id} orderNumber={order.orderNumber} />
             )}
           </>

@@ -19,10 +19,13 @@ import { Button } from "@/components/ui/button";
 import { BrandLogo, BrandMark } from "@/components/shared/BrandLogo";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { cn } from "@/lib/utils";
+import { ROLE_LABELS, isMaster, type Role } from "@/lib/roles";
 
 type NavItem = { href: string; label: string; short: string; icon: LucideIcon };
 
-const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+// masterOnly: disembunyikan untuk STAFF. Ini hanya tampilan — halaman dan
+// API-nya tetap dicek di server (requireMasterPage / denyUnlessMaster).
+const NAV_GROUPS: { label: string; masterOnly?: boolean; items: NavItem[] }[] = [
   {
     label: "Operasional",
     items: [
@@ -33,15 +36,19 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   },
   {
     label: "Bisnis",
+    masterOnly: true,
     items: [{ href: "/reports", label: "Laporan", short: "Laporan", icon: TrendingUp }],
   },
   {
     label: "Pengaturan",
+    masterOnly: true,
     items: [{ href: "/users", label: "Staff", short: "Staff", icon: UserCog }],
   },
 ];
 
-const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
+function navGroupsFor(user: User) {
+  return NAV_GROUPS.filter((g) => !g.masterOnly || isMaster(user));
+}
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -50,7 +57,7 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
-type User = { name: string; email: string };
+type User = { name: string; email: string; role: Role };
 
 /**
  * Isi sidebar (nav + footer user) dipakai bersama oleh sidebar desktop dan
@@ -82,7 +89,7 @@ function SidebarBody({
         </Link>
       </div>
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-4">
-        {NAV_GROUPS.map((group) => (
+        {navGroupsFor(user).map((group) => (
           <div key={group.label}>
             <p className="mb-1.5 px-3 text-[11px] font-semibold tracking-wider text-sidebar-muted uppercase">
               {group.label}
@@ -126,7 +133,9 @@ function SidebarBody({
           <UserAvatar name={user.name} size="md" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-white">{user.name}</p>
-            <p className="truncate text-xs text-sidebar-muted">{user.email}</p>
+            <p className="truncate text-xs text-sidebar-muted">
+              {ROLE_LABELS[user.role]} · {user.email}
+            </p>
           </div>
           <button
             type="button"
@@ -189,8 +198,9 @@ export function Sidebar({ user }: { user: User }) {
     router.refresh();
   }
 
-  const currentNav = NAV_ITEMS.find((item) => isActive(pathname, item.href));
-  const bottomItems = NAV_ITEMS.filter((item) =>
+  const navItems = navGroupsFor(user).flatMap((g) => g.items);
+  const currentNav = navItems.find((item) => isActive(pathname, item.href));
+  const bottomItems = navItems.filter((item) =>
     ["/", "/orders", "/customers"].includes(item.href),
   );
 

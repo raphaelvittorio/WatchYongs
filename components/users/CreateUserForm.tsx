@@ -1,29 +1,33 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RoleSelect } from "@/components/users/RoleSelect";
+import { Role } from "@/lib/roles";
 
 const schema = z.object({
   name: z.string().min(1, "Nama wajib diisi."),
   email: z.string().email("Format email tidak valid."),
   password: z.string().min(8, "Password minimal 8 karakter."),
+  role: z.enum([Role.MASTER, Role.STAFF]),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-export type CreatedUser = { id: string; name: string; email: string };
-
-export function CreateUserForm({ onSuccess }: { onSuccess: (user: CreatedUser) => void }) {
+export function CreateUserForm() {
+  const router = useRouter();
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { role: "STAFF" } });
 
   async function onSubmit(values: FormValues) {
     const res = await fetch("/api/users", {
@@ -38,9 +42,10 @@ export function CreateUserForm({ onSuccess }: { onSuccess: (user: CreatedUser) =
       return;
     }
 
-    const user = (await res.json()) as CreatedUser;
-    toast.success(`Akun staff ${user.name} berhasil dibuat.`);
-    onSuccess(user);
+    const user = (await res.json()) as { name: string };
+    toast.success(`Akun ${user.name} berhasil dibuat.`);
+    router.push("/users");
+    router.refresh();
   }
 
   return (
@@ -62,8 +67,16 @@ export function CreateUserForm({ onSuccess }: { onSuccess: (user: CreatedUser) =
           <p className="text-sm text-red-600">{errors.password.message}</p>
         )}
       </div>
+      <div className="space-y-2">
+        <Label>Role</Label>
+        <Controller
+          control={control}
+          name="role"
+          render={({ field }) => <RoleSelect value={field.value} onChange={field.onChange} />}
+        />
+      </div>
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? "Menyimpan..." : "Buat Akun Staff"}
+        {isSubmitting ? "Menyimpan..." : "Buat Akun"}
       </Button>
     </form>
   );

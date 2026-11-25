@@ -9,6 +9,7 @@ import {
   FileText,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { requireMasterPage } from "@/lib/auth";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { MonthlyRevenueChart } from "@/components/reports/MonthlyRevenueChart";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -44,6 +45,8 @@ function monthDate(key: string) {
 }
 
 export default async function ReportsPage() {
+  await requireMasterPage();
+
   const invoices = await prisma.invoice.findMany({
     include: {
       orders: { include: { customer: true }, orderBy: { createdAt: "asc" } },

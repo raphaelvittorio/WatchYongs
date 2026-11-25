@@ -1,13 +1,13 @@
-"use client";
-
-import { useRouter } from "next/navigation";
 import { UserCog } from "lucide-react";
+import { requireMasterPage } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateUserForm } from "@/components/users/CreateUserForm";
 import { PageHeader } from "@/components/shared/PageHeader";
 
-export default function NewUserPage() {
-  const router = useRouter();
+export const metadata = { title: "Staff Baru" };
+
+export default async function NewUserPage() {
+  await requireMasterPage();
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -29,12 +29,7 @@ export default function NewUserPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <CreateUserForm
-            onSuccess={() => {
-              router.push("/users");
-              router.refresh();
-            }}
-          />
+          <CreateUserForm />
         </CardContent>
       </Card>
     </div>

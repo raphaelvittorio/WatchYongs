@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { toCsv } from "@/lib/csv";
 import { SERVICE_TYPE_LABELS } from "@/lib/status";
+import { denyUnlessMaster } from "@/lib/auth";
 
 export async function GET() {
+  const denied = await denyUnlessMaster();
+  if (denied) return denied;
   const invoices = await prisma.invoice.findMany({
     include: { orders: { include: { customer: true }, orderBy: { createdAt: "asc" } } },
     orderBy: { createdAt: "desc" },
